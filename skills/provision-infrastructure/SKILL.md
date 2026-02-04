@@ -1,3 +1,9 @@
+---
+name: provision-infrastructure
+description: Provisions complete AWS infrastructure for Moodle 5.1 using Terraform including EC2, RDS, EBS volumes, Security Groups, and IAM roles. Use when starting a new Moodle deployment from scratch. Triggers: "deploy Moodle on AWS", "provision infrastructure", "create EC2 instance", "setup AWS for Moodle".
+disable-model-invocation: true
+---
+
 # Provision AWS Infrastructure for Moodle
 
 Provisions complete AWS infrastructure for Moodle 5.1 using Terraform including EC2, RDS, EBS volumes, Security Groups, and IAM roles.
@@ -28,7 +34,7 @@ The deployment includes:
 
 ### Required files
 
-The infrastructure code is in `deploy-moodle/terraform/`:
+The infrastructure code is in `terraform/`:
 - `main.tf` - Main configuration
 - `variables.tf` - 75+ configurable variables
 - `ec2.tf` - EC2, EBS, Security Groups
@@ -45,7 +51,7 @@ The infrastructure code is in `deploy-moodle/terraform/`:
 
 2. **Configure variables:**
    ```bash
-   cd deploy-moodle/terraform/
+   cd terraform/
    cp terraform.tfvars.example terraform.tfvars
    ```
 
@@ -110,9 +116,9 @@ The Terraform code automatically calculates:
 ### Post-provisioning
 
 After successful provisioning:
-1. Update DNS A record: domain → Elastic IP
+1. Update DNS A record: domain -> Elastic IP
 2. Connect via SSH using the provided command
-3. Proceed to server setup with `setup-moodle-server` skill
+3. Proceed to server setup with `/setup-moodle-server` skill
 4. Configuration file created at `/root/moodle-config.env` on server
 
 ### Troubleshooting

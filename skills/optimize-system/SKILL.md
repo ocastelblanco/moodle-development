@@ -1,3 +1,8 @@
+---
+name: optimize-system
+description: Optimizes PHP-FPM, Apache, and system resources based on available RAM. Includes automatic configuration of memory limits, SWAP, and monitoring. Use when experiencing performance issues or after Moodle installation. Triggers: "optimize server", "fix memory issues", "tune PHP-FPM", "prevent OOM", "improve performance".
+---
+
 # Optimize Moodle System
 
 Optimizes PHP-FPM, Apache, and system resources based on available RAM. Includes automatic configuration of memory limits, SWAP, and monitoring. Based on real-world ACG production optimization.
@@ -36,13 +41,13 @@ This skill implements proven optimization strategies from the ACG Calidad projec
 
 ### Available automation
 
-Script location: `deploy-moodle/scripts/05-optimize-system.sh`
+Script location: `scripts/05-optimize-system.sh`
 
 The script automatically:
 1. Detects total RAM
 2. Calculates optimal PHP-FPM settings
 3. Configures Apache MPM Event
-4. Sets up SWAP (if RAM ≤ 8GB)
+4. Sets up SWAP (if RAM <= 8GB)
 5. Installs memory monitoring
 6. Restarts services
 
@@ -63,7 +68,7 @@ Bounds: min 5, max 100
 
 **SWAP size calculation:**
 ```
-RAM < 2GB:   SWAP = 2 × RAM
+RAM < 2GB:   SWAP = 2 x RAM
 RAM 2-8GB:   SWAP = RAM
 RAM > 8GB:   SWAP = 8GB (maximum)
 ```
@@ -279,18 +284,18 @@ sudo rm /swapfile
 ### Expected output
 
 ```
-✓ System resources detected: 4096 MB RAM
-✓ Calculated PHP-FPM settings:
+System resources detected: 4096 MB RAM
+Calculated PHP-FPM settings:
   - max_children: 15
   - start_servers: 3
   - min_spare_servers: 2
   - max_spare_servers: 5
-✓ PHP-FPM configuration updated
-✓ PHP settings optimized
-✓ Apache MPM Event configured
-✓ SWAP configured: 2GB
-✓ Memory monitoring installed (runs hourly)
-✓ Services restarted successfully
+PHP-FPM configuration updated
+PHP settings optimized
+Apache MPM Event configured
+SWAP configured: 2GB
+Memory monitoring installed (runs hourly)
+Services restarted successfully
 
 Current resource usage:
   Total RAM: 4.0 GB
@@ -320,25 +325,3 @@ Your system now has 2.8GB free RAM and should be stable. I've also set up hourly
 
 Check memory status anytime with: `free -h`
 View history: `sudo tail -100 /var/log/memory-monitor.log`
-
----
-
-**User:** "Is 4GB RAM enough or should I upgrade to 8GB?"
-
-**Assistant:** Let me analyze your current usage before recommending an upgrade.
-
-[Checks memory-monitor.log history]
-[Analyzes memory patterns]
-[Checks SWAP usage]
-
-Based on your logs:
-- Average memory available: 2.5GB
-- Peak usage: 60%
-- SWAP usage: < 50MB (barely used)
-
-**Verdict:** 4GB is sufficient for your current load! The optimization is working well. You don't need to upgrade unless:
-- Users increase significantly (2x or more)
-- You see consistent < 500MB available
-- SWAP usage > 500MB regularly
-
-Save the $24/month upgrade cost for now. I'll set up an alert to notify you if memory gets low.

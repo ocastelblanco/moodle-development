@@ -1,3 +1,9 @@
+---
+name: setup-moodle-server
+description: Installs and configures complete LAMP stack (Apache 2.4 + PHP 8.4 + MariaDB client) on Amazon Linux 2023 for Moodle 5.1. Use when infrastructure is provisioned and EC2 instance is ready. Triggers: "setup server", "install LAMP", "configure Apache PHP", "prepare server for Moodle".
+disable-model-invocation: true
+---
+
 # Setup Moodle Server
 
 Installs and configures complete LAMP stack (Apache 2.4 + PHP 8.4 + MariaDB client) on Amazon Linux 2023 for Moodle 5.1.
@@ -34,7 +40,7 @@ This skill configures:
 
 ### Available automation
 
-Script location: `deploy-moodle/scripts/02-setup-server.sh`
+Script location: `scripts/02-setup-server.sh`
 
 The script automates all steps described below.
 
@@ -123,13 +129,13 @@ The script automates all steps described below.
 ### Configuration validation
 
 After setup, verify:
-- ✅ Apache running on port 80
-- ✅ PHP-FPM running
-- ✅ All PHP extensions loaded
-- ✅ Firewall configured (ports 80, 443 open)
-- ✅ SELinux configured for Moodle
-- ✅ Directories created with correct permissions
-- ✅ Database connectivity works (test to RDS)
+- Apache running on port 80
+- PHP-FPM running
+- All PHP extensions loaded
+- Firewall configured (ports 80, 443 open)
+- SELinux configured for Moodle
+- Directories created with correct permissions
+- Database connectivity works (test to RDS)
 
 ### Testing connectivity
 
@@ -146,7 +152,7 @@ mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" -e "SELECT 1;"
 
 Use the provided script:
 ```bash
-sudo deploy-moodle/scripts/02-setup-server.sh
+sudo scripts/02-setup-server.sh
 ```
 
 The script includes:
@@ -158,7 +164,6 @@ The script includes:
 
 ### Important notes
 
-- **Execution time:** ~5-10 minutes
 - **Requires:** Root/sudo access
 - **Internet:** Must have connectivity for downloads
 - **Restarts:** May restart services during configuration
@@ -175,7 +180,7 @@ The script includes:
 
 After successful setup:
 1. Server is ready for Moodle installation
-2. Proceed with `install-moodle` skill
+2. Proceed with `/install-moodle` skill
 3. Access http://<server-ip>/info.php to verify PHP (delete after)
 4. Configure SSL before going to production
 
@@ -201,15 +206,15 @@ After successful setup:
 ### Expected output
 
 ```
-✓ System updated
-✓ Apache 2.4.65 installed and running
-✓ PHP 8.4.x installed with all extensions
-✓ MariaDB client installed
-✓ Additional tools installed
-✓ Firewall configured (HTTP, HTTPS open)
-✓ Directory structure created
-✓ SELinux configured
-✓ Database connection successful
+Server updated
+Apache 2.4.65 installed and running
+PHP 8.4.x installed with all extensions
+MariaDB client installed
+Additional tools installed
+Firewall configured (HTTP, HTTPS open)
+Directory structure created
+SELinux configured
+Database connection successful
 ```
 
 ## Example usage
@@ -231,19 +236,4 @@ Your server is now ready! Here's what was installed:
 - MariaDB client for RDS connection
 - System utilities and certbot
 
-Next step: Install Moodle with the `install-moodle` skill.
-
----
-
-**User:** "PHP-FPM won't start"
-
-**Assistant:** Let me troubleshoot the PHP-FPM startup issue.
-
-[Checks PHP-FPM logs]
-[Identifies configuration error]
-[Fixes configuration]
-[Restarts PHP-FPM]
-[Verifies service is running]
-
-PHP-FPM is now running successfully. The issue was [specific issue].
-Proceeding with the rest of the setup...
+Next step: Install Moodle with the `/install-moodle` skill.

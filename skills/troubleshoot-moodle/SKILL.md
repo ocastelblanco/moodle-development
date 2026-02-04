@@ -1,3 +1,8 @@
+---
+name: troubleshoot-moodle
+description: Diagnoses and resolves common Moodle deployment and operational issues including performance problems, errors, and service failures. Use when issues are reported or site is not functioning properly. Triggers: "site is down", "503 error", "Moodle slow", "out of memory", "database error", "cron not running".
+---
+
 # Troubleshoot Moodle Issues
 
 Diagnoses and resolves common Moodle deployment and operational issues including performance problems, errors, and service failures.
@@ -26,9 +31,43 @@ You are an expert in Moodle troubleshooting and Linux system administration. You
 5. **Apply fix** - Implement solution
 6. **Verify** - Confirm issue is resolved
 
-### Common issues and solutions
+### Quick health check
 
-## Issue 1: Site returns 503 Service Unavailable
+Run this script to quickly diagnose common issues:
+
+```bash
+#!/bin/bash
+echo "=== Moodle Health Check ==="
+
+# Services
+echo "Services:"
+systemctl is-active httpd && echo "  Apache running" || echo "  Apache DOWN"
+systemctl is-active php-fpm && echo "  PHP-FPM running" || echo "  PHP-FPM DOWN"
+
+# Memory
+echo -e "\nMemory:"
+free -h | grep -E "Mem:|Swap:"
+
+# Disk
+echo -e "\nDisk:"
+df -h / /moodledata | grep -v "Filesystem"
+
+# Database
+source /root/moodle-config.env
+if mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
+    echo "  Database connected"
+else
+    echo "  Database connection failed"
+fi
+
+# Recent errors
+echo -e "\nRecent errors (last 10):"
+sudo tail -10 /var/log/httpd/moodle-error.log
+```
+
+## Common issues and solutions
+
+### Issue 1: Site returns 503 Service Unavailable
 
 **Symptoms:**
 - Browser shows "503 Service Unavailable"
@@ -54,16 +93,10 @@ sudo systemctl restart php-fpm
 # Verify it's running
 sudo systemctl status php-fpm
 
-# If it keeps crashing, optimize system
-# Use optimize-system skill
+# If it keeps crashing, use /optimize-system skill
 ```
 
-**Prevention:**
-- Run `optimize-system` skill to prevent OOM
-- Monitor memory usage
-- Consider upgrading instance size
-
-## Issue 2: Cannot connect to database
+### Issue 2: Cannot connect to database
 
 **Symptoms:**
 - Error: "Could not connect to the database"
@@ -97,17 +130,7 @@ aws ec2 describe-security-groups --group-ids sg-xxxxx
 sudo grep dbhost /var/www/html/moodle/config.php
 ```
 
-**If Security Group issue:**
-```bash
-# Add rule allowing 3306 from EC2 security group
-aws ec2 authorize-security-group-ingress \
-    --group-id sg-rds-xxxxx \
-    --protocol tcp \
-    --port 3306 \
-    --source-group sg-ec2-xxxxx
-```
-
-## Issue 3: Out of Memory errors
+### Issue 3: Out of Memory errors
 
 **Symptoms:**
 - Site randomly goes down
@@ -134,13 +157,7 @@ sudo grep "pm.max_children" /etc/php-fpm.d/www.conf
 
 **Solution:**
 ```bash
-# Run optimization skill
-# This will:
-# - Reduce PHP-FPM max_children
-# - Configure SWAP
-# - Set up monitoring
-
-# Or manually reduce max_children
+# Use /optimize-system skill, or manually reduce max_children
 # For 4GB RAM: max_children = 15
 # For 8GB RAM: max_children = 35
 
@@ -149,12 +166,7 @@ sudo vim /etc/php-fpm.d/www.conf
 sudo systemctl restart php-fpm
 ```
 
-**Prevention:**
-- Use `optimize-system` skill
-- Monitor `/var/log/memory-monitor.log`
-- Set up CloudWatch alarms
-
-## Issue 4: Slow performance
+### Issue 4: Slow performance
 
 **Symptoms:**
 - Pages take > 5 seconds to load
@@ -177,9 +189,6 @@ netstat -an | grep :80 | grep ESTABLISHED | wc -l
 
 # Check PHP-FPM processes
 ps aux | grep php-fpm | wc -l
-
-# Check slow queries (if enabled)
-sudo tail -100 /var/log/mysql-slow.log
 ```
 
 **Common causes:**
@@ -204,21 +213,13 @@ ps aux | grep cron.php
 sudo kill -9 <pid>
 ```
 
-**If memory high:**
-- Run `optimize-system` skill
-- Reduce PHP-FPM max_children
-- Enable SWAP
-
 **If cache not optimized:**
 ```bash
 # Purge and rebuild caches
 sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php
-
-# Check Moodle cache settings in UI
-# Site admin → Server → Performance
 ```
 
-## Issue 5: Cron not running
+### Issue 5: Cron not running
 
 **Symptoms:**
 - Scheduled tasks not executing
@@ -235,16 +236,7 @@ sudo systemctl status crond
 
 # Check for cron execution in logs
 sudo grep cron.php /var/log/cron
-
-# Check last cron run in Moodle
-# Admin → Server → Scheduled tasks
 ```
-
-**Common causes:**
-1. Cron file missing or misconfigured
-2. Cron service not running
-3. PHP process stuck
-4. Permissions issue
 
 **Solutions:**
 
@@ -262,19 +254,7 @@ sudo systemctl start crond
 sudo systemctl enable crond
 ```
 
-**If PHP stuck:**
-```bash
-# Find stuck cron processes
-ps aux | grep cron.php
-
-# Kill them
-sudo killall -9 php
-
-# Run cron manually to test
-sudo -u apache /usr/bin/php /var/www/html/moodle/admin/cli/cron.php
-```
-
-## Issue 6: SSL certificate errors
+### Issue 6: SSL certificate errors
 
 **Symptoms:**
 - Browser shows "Not Secure"
@@ -294,11 +274,6 @@ openssl x509 -enddate -noout \
 sudo certbot renew --dry-run
 ```
 
-**Common causes:**
-1. Certificate expired
-2. Auto-renewal failed
-3. Apache not reloaded after renewal
-
 **Solutions:**
 
 **If expired:**
@@ -310,20 +285,7 @@ sudo certbot renew --force-renewal
 sudo systemctl reload httpd
 ```
 
-**If auto-renewal failing:**
-```bash
-# Check renewal timer
-sudo systemctl status certbot-renew.timer
-
-# Enable if not active
-sudo systemctl enable certbot-renew.timer
-sudo systemctl start certbot-renew.timer
-
-# Check logs
-sudo journalctl -u certbot-renew
-```
-
-## Issue 7: File upload errors
+### Issue 7: File upload errors
 
 **Symptoms:**
 - Cannot upload files to Moodle
@@ -359,52 +321,8 @@ sudo semanage fcontext -a -t httpd_sys_rw_content_t "/moodledata(/.*)?"
 sudo restorecon -Rv /moodledata
 ```
 
-**If disk full:**
-```bash
-# Check what's using space
-du -sh /moodledata/* | sort -h
+### View all logs
 
-# Clean old backups if needed
-find /moodledata/backup -type f -mtime +30 -delete
-
-# Clean cache
-sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php
-```
-
-## Systematic troubleshooting commands
-
-**Quick health check:**
-```bash
-#!/bin/bash
-echo "=== Moodle Health Check ==="
-
-# Services
-echo "Services:"
-systemctl is-active httpd && echo "  ✓ Apache running" || echo "  ✗ Apache DOWN"
-systemctl is-active php-fpm && echo "  ✓ PHP-FPM running" || echo "  ✗ PHP-FPM DOWN"
-
-# Memory
-echo -e "\nMemory:"
-free -h | grep -E "Mem:|Swap:"
-
-# Disk
-echo -e "\nDisk:"
-df -h / /moodledata | grep -v "Filesystem"
-
-# Database
-source /root/moodle-config.env
-if mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
-    echo "  ✓ Database connected"
-else
-    echo "  ✗ Database connection failed"
-fi
-
-# Recent errors
-echo -e "\nRecent errors (last 10):"
-sudo tail -10 /var/log/httpd/moodle-error.log
-```
-
-**View all logs:**
 ```bash
 # Apache errors
 sudo tail -50 /var/log/httpd/moodle-error.log
@@ -419,7 +337,7 @@ sudo journalctl -p err -n 50
 sudo tail -50 /moodledata/moodle.log
 ```
 
-## Prevention checklist
+### Prevention checklist
 
 - [ ] Regular backups configured
 - [ ] Memory monitoring active
@@ -430,15 +348,15 @@ sudo tail -50 /moodledata/moodle.log
 - [ ] System updates scheduled
 - [ ] Performance baseline established
 
-## When to escalate
+### When to escalate
 
-Contact AWS support if:
+**Contact AWS support if:**
 - EC2 instance won't start
 - EBS volume corruption
 - RDS not responding to API calls
 - Network connectivity issues
 
-Contact Moodle community if:
+**Contact Moodle community if:**
 - Core Moodle bug
 - Plugin compatibility issues
 - Database schema problems
@@ -460,7 +378,7 @@ I found the issue: PHP-FPM was killed by the OOM (Out of Memory) killer.
 Your site is back online now.
 
 **Permanent solution:**
-I'm running the optimize-system skill to prevent this from happening again. This will:
+I'm running the `/optimize-system` skill to prevent this from happening again. This will:
 1. Reduce PHP-FPM to 15 processes (safe for 4GB RAM)
 2. Add 2GB SWAP as safety net
 3. Set up hourly memory monitoring
@@ -468,32 +386,3 @@ I'm running the optimize-system skill to prevent this from happening again. This
 [Runs optimization]
 
 Done! Your site is now optimized and stable. Check memory anytime with: `free -h`
-
----
-
-**User:** "Site is very slow, pages take 30+ seconds to load"
-
-**Assistant:** Let me investigate the slow performance.
-
-[Checks CPU, memory, disk, processes]
-
-I found several issues:
-1. CPU at 95% - Multiple stuck Moodle cron processes
-2. Memory at 90% - Close to limit
-3. 15 PHP-FPM processes running (at max)
-
-**Fixing now:**
-[Kills stuck cron processes]
-[Purges Moodle cache]
-[Optimizes PHP-FPM settings]
-
-Performance should improve immediately. Let me monitor for 30 seconds...
-
-[Checks again]
-
-Much better:
-- CPU: 15% (was 95%)
-- Memory: 45% (was 90%)
-- Page load: 2 seconds (was 30+)
-
-I also set up monitoring to prevent this. The stuck cron processes were the main issue.

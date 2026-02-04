@@ -1,3 +1,9 @@
+---
+name: configure-ssl
+description: Configures SSL/TLS with Let's Encrypt free certificate, implements security headers, and achieves A+ SSL Labs rating. Use when Moodle is installed and domain points to server. Triggers: "enable HTTPS", "configure SSL", "get SSL certificate", "secure site with TLS".
+disable-model-invocation: true
+---
+
 # Configure SSL/HTTPS
 
 Configures SSL/TLS with Let's Encrypt free certificate, implements security headers, and achieves A+ SSL Labs rating.
@@ -35,14 +41,14 @@ This skill configures:
 
 ### Available automation
 
-Script location: `deploy-moodle/scripts/04-configure-ssl.sh`
+Script location: `scripts/04-configure-ssl.sh`
 
 The script automates:
 1. DNS verification
 2. Let's Encrypt certificate acquisition
 3. Apache SSL configuration
 4. Security headers implementation
-5. HTTP→HTTPS redirect
+5. HTTP to HTTPS redirect
 6. Moodle config update
 7. Renewal testing
 
@@ -121,7 +127,7 @@ sudo certbot --apache \
 Certbot will:
 - Create SSL certificate
 - Configure Apache SSL vhost
-- Set up HTTP→HTTPS redirect
+- Set up HTTP to HTTPS redirect
 - Configure auto-renewal
 
 **5. Enhance SSL configuration:**
@@ -305,16 +311,16 @@ sudo ls -la /etc/letsencrypt/live/yourdomain.com/
 ### Expected output
 
 ```
-✓ DNS verified: yourdomain.com → 52.x.x.x
-✓ Apache virtual host configured
-✓ Let's Encrypt certificate obtained
+DNS verified: yourdomain.com -> 52.x.x.x
+Apache virtual host configured
+Let's Encrypt certificate obtained
   - Domain: yourdomain.com
   - Expires: 90 days from now
   - Auto-renewal: Enabled
-✓ Security headers configured
-✓ HTTP→HTTPS redirect active
-✓ Moodle config updated to HTTPS
-✓ SSL configuration tested
+Security headers configured
+HTTP to HTTPS redirect active
+Moodle config updated to HTTPS
+SSL configuration tested
 
 SSL Labs rating: A+
 Security Headers rating: A
@@ -328,28 +334,6 @@ Your Moodle site is now secured with HTTPS!
 Access at: https://yourdomain.com
 ```
 
-### Monitoring
-
-**Check certificate expiry:**
-```bash
-# Certificate info
-sudo certbot certificates
-
-# Days until expiry
-openssl x509 -enddate -noout -in /etc/letsencrypt/live/yourdomain.com/fullchain.pem
-
-# Create monitoring script
-echo '#!/bin/bash
-EXPIRY=$(openssl x509 -enddate -noout -in /etc/letsencrypt/live/yourdomain.com/fullchain.pem | cut -d= -f2)
-DAYS_LEFT=$(( ($(date -d "$EXPIRY" +%s) - $(date +%s)) / 86400 ))
-echo "SSL certificate expires in $DAYS_LEFT days"
-if [ $DAYS_LEFT -lt 30 ]; then
-    echo "WARNING: Certificate expires soon!"
-fi' | sudo tee /usr/local/bin/check-ssl-expiry.sh
-
-sudo chmod +x /usr/local/bin/check-ssl-expiry.sh
-```
-
 ## Example usage
 
 **User:** "I need to enable HTTPS for my Moodle site at moodle.example.com"
@@ -358,8 +342,8 @@ sudo chmod +x /usr/local/bin/check-ssl-expiry.sh
 
 First, let me verify your DNS is configured...
 
-[Checks DNS: moodle.example.com → server IP]
-✓ DNS is correctly configured
+[Checks DNS: moodle.example.com -> server IP]
+DNS is correctly configured
 
 [Creates Apache virtual host]
 [Obtains Let's Encrypt certificate]
@@ -376,24 +360,3 @@ SSL configured successfully! Your site now has:
 Access your site at: https://moodle.example.com
 
 Certificate expires in 90 days but will auto-renew.
-
----
-
-**User:** "Getting error: DNS validation failed"
-
-**Assistant:** The DNS validation error means Let's Encrypt can't verify your domain ownership. Let me troubleshoot...
-
-[Checks DNS resolution]
-
-I found the issue: Your domain moodle.example.com is not resolving to your server IP yet.
-
-Current: moodle.example.com → 1.2.3.4
-Should be: moodle.example.com → 52.x.x.x (your server)
-
-Please update your DNS A record:
-1. Go to your DNS provider (GoDaddy/Cloudflare/Route53)
-2. Create/update A record: moodle.example.com → 52.x.x.x
-3. Wait 5-15 minutes for propagation
-4. Run this command to check: `dig +short moodle.example.com`
-
-Once DNS is correct, I'll retry the SSL configuration.

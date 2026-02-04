@@ -1,3 +1,9 @@
+---
+name: install-moodle
+description: Downloads, installs, and configures Moodle 5.1 on the prepared server with database setup and initial configuration. Use when server is configured and RDS database is available. Triggers: "install Moodle", "deploy Moodle application", "setup Moodle database", "configure Moodle".
+disable-model-invocation: true
+---
+
 # Install Moodle 5.1
 
 Downloads, installs, and configures Moodle 5.1 on the prepared server with database setup and initial configuration.
@@ -35,7 +41,7 @@ This skill performs:
 
 ### Available automation
 
-Script location: `deploy-moodle/scripts/03-install-moodle.sh`
+Script location: `scripts/03-install-moodle.sh`
 
 The script fully automates the installation process.
 
@@ -43,7 +49,7 @@ The script fully automates the installation process.
 
 **Method 1: Automated (Recommended)**
 ```bash
-sudo deploy-moodle/scripts/03-install-moodle.sh
+sudo scripts/03-install-moodle.sh
 ```
 
 **Method 2: Manual** (follow steps below)
@@ -210,21 +216,14 @@ After installation:
 
 ### Post-installation tasks
 
-1. **Create Apache virtual host** (see `configure-ssl` skill)
+1. **Create Apache virtual host** (see `/configure-ssl` skill)
 2. **Configure SSL/HTTPS** (required before production)
-3. **Optimize system** (see `optimize-system` skill)
+3. **Optimize system** (see `/optimize-system` skill)
 4. **Complete Moodle setup in browser:**
    - Access https://yourdomain.com
    - Login with admin credentials
    - Complete initial configuration wizard
    - Configure site settings
-
-### Expected installation time
-
-- Download: 2-3 minutes
-- Database installation: 5-10 minutes
-- Configuration: 1-2 minutes
-- **Total:** ~10-15 minutes
 
 ### Disk space requirements
 
@@ -264,25 +263,16 @@ sudo systemctl status crond
 sudo tail -f /var/log/cron
 ```
 
-**Error: Database tables not created**
-```bash
-# Check PHP memory limit
-php -i | grep memory_limit
-
-# Run upgrade manually
-sudo -u apache php /var/www/html/moodle/admin/cli/upgrade.php
-```
-
 ### Expected output
 
 ```
-✓ Moodle 5.1.x downloaded from GitHub
-✓ Permissions configured
-✓ config.php created and secured
-✓ Database installed (400+ tables created)
-✓ Admin user created
-✓ Cron configured and tested
-✓ Installation successful
+Moodle 5.1.x downloaded from GitHub
+Permissions configured
+config.php created and secured
+Database installed (400+ tables created)
+Admin user created
+Cron configured and tested
+Installation successful
 
 Admin credentials:
   Username: admin
@@ -290,8 +280,8 @@ Admin credentials:
   Email: admin@yourdomain.com
 
 Next steps:
-  1. Configure SSL: configure-ssl skill
-  2. Optimize system: optimize-system skill
+  1. Configure SSL: /configure-ssl
+  2. Optimize system: /optimize-system
   3. Access site: https://yourdomain.com
 ```
 
@@ -316,20 +306,5 @@ Moodle 5.1 installed successfully!
 - Cron: Running every minute
 
 Before accessing the site, you should:
-1. Configure SSL/HTTPS (use configure-ssl skill)
-2. Optimize the system (use optimize-system skill)
-
----
-
-**User:** "Installation failed with database connection error"
-
-**Assistant:** Let me troubleshoot the database connection issue.
-
-[Tests MySQL connection to RDS]
-[Checks Security Group rules]
-[Verifies credentials in config]
-[Identifies issue: wrong password in config]
-[Updates config.php with correct password]
-[Retries installation]
-
-Database connection fixed! The password in config.php didn't match the RDS password. I've corrected it and the installation completed successfully.
+1. Configure SSL/HTTPS (use `/configure-ssl`)
+2. Optimize the system (use `/optimize-system`)
