@@ -386,6 +386,10 @@ xcuserdata/
 *.tar
 *.zip
 
+# Configuraciones internas de Claude / OMC
+.claude
+.omc
+
 # ==================== PROYECTOS ESPECÍFICOS ====================
 
 # Si trabajas con algún framework específico, descomenta:
