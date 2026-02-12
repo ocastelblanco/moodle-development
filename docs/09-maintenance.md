@@ -147,6 +147,8 @@ sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php
 sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --disable
 ```
 
+**Nota sobre estructura de directorios:** Los scripts CLI permanecen en `/var/www/html/moodle/admin/cli/` (por encima del directorio `/public` que es el DocumentRoot del servidor web).
+
 ### Actualización Major (5.1 → 5.2)
 
 **⚠️ IMPORTANTE:** Probar en staging primero
@@ -157,6 +159,109 @@ sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --disable
 # - Check system requirements
 # - Plan downtime window
 # - Have rollback plan ready
+```
+
+### Actualización desde Moodle 4.x a 5.1
+
+**⚠️ CRÍTICO:** Este proceso requiere reconfiguración del servidor web
+
+**Requisitos previos:**
+- Estar en Moodle 4.2.3 o superior (path mínimo de actualización)
+- PHP 8.2.0+ instalado
+- Backup completo del sistema
+
+**Pasos:**
+
+```bash
+# 1. Backup completo
+sudo /usr/local/bin/moodle-backup-db.sh
+sudo tar -czf /var/backups/moodle-code-$(date +%Y%m%d).tar.gz /var/www/html/moodle
+sudo tar -czf /var/backups/moodledata-$(date +%Y%m%d).tar.gz /moodledata
+
+# 2. Enable maintenance mode
+sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --enable
+
+# 3. Update code to 5.1
+cd /var/www/html/moodle
+sudo -u apache git fetch origin
+sudo -u apache git checkout MOODLE_51_STABLE
+sudo -u apache git pull
+
+# 4. CRÍTICO: Reconfigurar Apache DocumentRoot
+# Editar /etc/httpd/conf.d/moodle.conf
+# Cambiar: DocumentRoot /var/www/html/moodle
+# Por:     DocumentRoot /var/www/html/moodle/public
+
+sudo nano /etc/httpd/conf.d/moodle.conf
+
+# Ejemplo de configuración requerida:
+# <VirtualHost *:80>
+#     ServerName moodle.yourdomain.com
+#     DocumentRoot /var/www/html/moodle/public
+#
+#     <Directory /var/www/html/moodle/public>
+#         Options -Indexes +FollowSymLinks
+#         AllowOverride All
+#         Require all granted
+#     </Directory>
+# </VirtualHost>
+
+# 5. Verificar configuración de Apache
+sudo apachectl configtest
+
+# 6. Recargar Apache
+sudo systemctl reload httpd
+
+# 7. Run upgrade
+sudo -u apache php /var/www/html/moodle/admin/cli/upgrade.php --non-interactive
+
+# 8. Verificar migración de plugins
+sudo -u apache php /var/www/html/moodle/admin/cli/check_database_schema.php
+
+# 9. Purge caches
+sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php
+
+# 10. Verificar Routing Engine activo
+# Site administration → Development → Experimental → Enable routing engine (debe estar ON)
+
+# 11. Test básico
+curl -I http://localhost/
+# Debe devolver 200 OK
+
+# 12. Disable maintenance mode
+sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --disable
+```
+
+**Post-actualización:**
+1. Verificar que todos los plugins funcionen correctamente
+2. Revisar logs de error: `/var/log/httpd/moodle-error.log`
+3. Probar funcionalidades críticas: login, navegación de cursos, subida de archivos
+4. Verificar acceso a temas y recursos estáticos
+5. Confirmar que el Routing Engine está activo y funcionando
+
+**Rollback si hay problemas:**
+```bash
+# 1. Enable maintenance mode
+sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --enable
+
+# 2. Restaurar código
+cd /var/www/html
+sudo rm -rf moodle
+sudo tar -xzf /var/backups/moodle-code-YYYYMMDD.tar.gz
+
+# 3. Restaurar DocumentRoot a configuración anterior
+sudo nano /etc/httpd/conf.d/moodle.conf
+# Cambiar de vuelta: DocumentRoot /var/www/html/moodle
+
+# 4. Recargar Apache
+sudo systemctl reload httpd
+
+# 5. Restaurar base de datos
+gunzip < /var/backups/moodle/database/moodle-db-YYYYMMDD.sql.gz | \
+    mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME
+
+# 6. Disable maintenance mode
+sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --disable
 ```
 
 ## 🚨 Troubleshooting
@@ -403,6 +508,117 @@ Moodle Community: https://moodle.org/mod/forum/
 Security Issues: security@moodle.org
 ```
 
+## 🆕 Consideraciones Específicas de Moodle 5.1
+
+### Estructura de Directorios /public
+
+**Puntos clave:**
+- **DocumentRoot:** `/var/www/html/moodle/public` (no `/var/www/html/moodle`)
+- **Config.php:** Permanece en `/var/www/html/moodle/config.php`
+- **CLI scripts:** Permanecen en `/var/www/html/moodle/admin/cli/`
+- **Moodledata:** Permanece en `/moodledata` (sin cambios)
+
+### Verificación de Routing Engine
+
+```bash
+# Verificar que el Routing Engine esté activo
+# Site administration → Development → Experimental → Enable routing engine
+
+# O verificar vía CLI
+sudo -u apache php /var/www/html/moodle/admin/cli/cfg.php --name=enableroutingenabled
+```
+
+### Migración de Plugins Post-5.1
+
+Después de actualizar a 5.1, algunos plugins pueden necesitar relocación:
+
+```bash
+# 1. Listar plugins instalados
+sudo -u apache php /var/www/html/moodle/admin/cli/uninstall_plugins.php --showallplugins
+
+# 2. Verificar estado de plugins
+# Site administration → Plugins → Plugins overview
+
+# 3. Reinstalar plugins problemáticos
+# (manual desde la interfaz web)
+```
+
+### Troubleshooting Específico de 5.1
+
+**Problema:** Sitio muestra error 404 después de actualizar
+
+**Solución:**
+```bash
+# Verificar DocumentRoot
+grep DocumentRoot /etc/httpd/conf.d/moodle.conf
+# Debe mostrar: DocumentRoot /var/www/html/moodle/public
+
+# Verificar permisos en /public
+ls -la /var/www/html/moodle/public/
+sudo chown -R apache:apache /var/www/html/moodle/public/
+
+# Recargar Apache
+sudo systemctl reload httpd
+```
+
+**Problema:** Assets estáticos (CSS, JS, imágenes) no cargan
+
+**Solución:**
+```bash
+# Purge all caches
+sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php
+
+# Verificar rutas en navegador (deben apuntar a /public/...)
+# Ejemplo: http://moodle.domain.com/theme/boost/style.php
+
+# Verificar configuración de Apache permite .htaccess
+grep AllowOverride /etc/httpd/conf.d/moodle.conf
+# Debe mostrar: AllowOverride All
+```
+
+**Problema:** Plugins no funcionan después de actualizar
+
+**Solución:**
+```bash
+# Verificar esquema de base de datos
+sudo -u apache php /var/www/html/moodle/admin/cli/check_database_schema.php
+
+# Upgrade plugins
+sudo -u apache php /var/www/html/moodle/admin/cli/upgrade.php --non-interactive
+
+# Verificar en interfaz web
+# Site administration → Notifications
+```
+
+### Requisitos de PHP para Moodle 5.1
+
+**Mínimo:** PHP 8.2.0
+**Recomendado:** PHP 8.3.x o 8.4.x
+
+```bash
+# Verificar versión actual
+php -v
+
+# Verificar extensiones requeridas
+php -m | grep -E 'sodium|curl|gd|intl|mbstring|zip|xml'
+
+# Verificar max_input_vars (debe ser >= 5000)
+php -i | grep max_input_vars
+```
+
+### Base de Datos - Requisitos 5.1
+
+| Motor | Versión Mínima | Proyecto |
+|-------|----------------|----------|
+| PostgreSQL | 15.0 | - |
+| MySQL | 8.4.0 | - |
+| MariaDB | 10.11.0 | ✅ 10.11.15 |
+
+**Verificar versión de MariaDB:**
+```bash
+mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT VERSION();"
+```
+
 ## ✅ Checklist de Mantenimiento
 
 ### Diario
@@ -413,6 +629,7 @@ Security Issues: security@moodle.org
 - [ ] Revisar logs de error
 - [ ] Verificar espacio en disco
 - [ ] Check SSL certificate status
+- [ ] Verificar Routing Engine activo (5.1+)
 
 ### Mensual
 - [ ] Actualizar sistema operativo
@@ -420,8 +637,17 @@ Security Issues: security@moodle.org
 - [ ] Optimizar base de datos
 - [ ] Test backup restore
 - [ ] Security audit
+- [ ] Verificar permisos en /public directory (5.1+)
+
+### Post-Actualización a 5.1
+- [ ] Verificar DocumentRoot apunta a /public
+- [ ] Confirmar Routing Engine activo
+- [ ] Verificar carga de assets estáticos
+- [ ] Probar login y navegación básica
+- [ ] Verificar funcionamiento de plugins
+- [ ] Revisar logs de error
 
 ---
 
-**Fecha:** 2026-02-02
-**Versión:** 1.0.0
+**Fecha:** 2026-02-11
+**Versión:** 1.1.0

@@ -181,7 +181,7 @@ chmod -R 755 /var/www/html/moodle
 chmod -R 770 /moodledata
 
 echo "✓ Directory structure created"
-echo "  Web root: /var/www/html/moodle"
+echo "  Web root: /var/www/html/moodle (DocumentRoot: /var/www/html/moodle/public)"
 echo "  Data directory: /moodledata"
 
 ################################################################################
@@ -249,6 +249,7 @@ echo "  MariaDB Client: $(mysql --version | cut -d' ' -f6)"
 
 echo -e "\n📁 Directory Structure:"
 echo "  Web Root: /var/www/html/moodle"
+echo "  DocumentRoot (Apache): /var/www/html/moodle/public"
 echo "  Moodledata: /moodledata"
 
 echo -e "\n🔧 Services Status:"

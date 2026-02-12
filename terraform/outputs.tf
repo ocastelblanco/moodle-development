@@ -141,6 +141,10 @@ output "next_steps" {
      ./05-optimize-system.sh
      ./06-setup-backups.sh
 
+     ⚠️  IMPORTANT for Moodle 5.1:
+     Apache DocumentRoot must point to /var/www/html/moodle/public
+     (not /var/www/html/moodle)
+
   4️⃣  Point your domain to this IP:
      ${var.domain_name} → ${aws_eip.moodle.public_ip}
 

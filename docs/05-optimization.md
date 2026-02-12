@@ -398,6 +398,7 @@ sudo sysctl vm.swappiness=10
 
 ```php
 // Cache store configuration
+// NOTA: Las rutas de cache en /moodledata NO cambian en Moodle 5.1
 $CFG->cachedir = '/moodledata/cache';
 
 // Session handler
@@ -462,6 +463,7 @@ $CFG->session_memcached_prefix = 'mdl_';
 
 ```bash
 # /etc/cron.d/moodle
+# NOTA: La ruta CLI NO cambia en Moodle 5.1 (permanece ARRIBA de /public)
 * * * * * apache /usr/bin/php /var/www/html/moodle/admin/cli/cron.php > /dev/null 2>&1
 ```
 
@@ -663,6 +665,6 @@ sudo grep -i "killed process" /var/log/messages
 
 ---
 
-**Fecha:** 2026-02-02
-**Versión:** 1.0.0
+**Fecha:** 2026-02-11
+**Versión:** 1.1.0
 **Basado en:** Proyecto ACG Calidad - Optimización Real

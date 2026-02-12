@@ -321,6 +321,48 @@ sudo semanage fcontext -a -t httpd_sys_rw_content_t "/moodledata(/.*)?"
 sudo restorecon -Rv /moodledata
 ```
 
+### Issue 8: Moodle 5.1 muestra pagina en blanco o error 404
+
+**Sintomas:**
+- Pagina en blanco al acceder al sitio
+- Error 404 en todas las URLs
+- Moodle no carga despues de upgrade a 5.1
+
+**Causa comun:** DocumentRoot no apunta a `/public`
+
+**Diagnostico:**
+```bash
+# Verificar configuracion de Apache
+grep -r "DocumentRoot" /etc/httpd/conf.d/
+
+# Debe apuntar a /var/www/html/moodle/public
+```
+
+**Solucion:**
+```bash
+# Editar virtual host
+sudo vim /etc/httpd/conf.d/moodle.conf
+
+# Cambiar DocumentRoot de:
+#   DocumentRoot /var/www/html/moodle
+# A:
+#   DocumentRoot /var/www/html/moodle/public
+
+# Tambien actualizar el Directory block:
+# <Directory /var/www/html/moodle/public>
+
+sudo systemctl restart httpd
+```
+
+**Verificacion:**
+```bash
+# Confirmar que el directorio /public existe
+ls -la /var/www/html/moodle/public/
+
+# Probar acceso
+curl -I http://localhost/
+```
+
 ### View all logs
 
 ```bash

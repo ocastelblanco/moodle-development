@@ -86,6 +86,8 @@ My Moodle site is showing 503 errors. Please diagnose and fix.
 
 ## Architecture Overview
 
+**Nota Moodle 5.1:** El DocumentRoot de Apache debe apuntar a `/var/www/html/moodle/public` en lugar de `/var/www/html/moodle`. Moodle 5.1 introduce un nuevo motor de enrutamiento (Routing Engine) que procesa todas las solicitudes a traves del directorio `/public`.
+
 ```
 +-------------------------------------------------------+
 |                     AWS Cloud                          |
@@ -156,6 +158,34 @@ My Moodle site is showing 503 errors. Please diagnose and fix.
 - SSH client
 - Domain name (for SSL)
 - Email address (for SSL and alerts)
+
+## Notas Especificas de Moodle 5.1
+
+### Cambios en la estructura de directorios
+
+- **DocumentRoot:** Apache debe apuntar a `/var/www/html/moodle/public` (no a `/var/www/html/moodle`)
+- **Directorio `/public`:** Se crea automaticamente al clonar el repositorio. Contiene el punto de entrada para el nuevo Routing Engine
+- **`/moodledata`:** Sin cambios, permanece en `/moodledata`
+- **`config.php`:** Sin cambios, permanece en `/var/www/html/moodle/config.php`
+- **CLI paths:** Sin cambios, permanecen en `/var/www/html/moodle/admin/cli/...`
+
+### Requisitos de PHP
+
+- **Minimo:** PHP 8.2.0 (anteriormente 8.1)
+- **Recomendado:** PHP 8.4.x
+
+### Routing Engine
+
+Moodle 5.1 introduce un nuevo motor de enrutamiento que procesa todas las solicitudes HTTP a traves del directorio `/public`. Esto mejora la seguridad al separar los archivos publicos del codigo fuente.
+
+### Migracion de plugins (upgrades)
+
+Al actualizar desde versiones anteriores a Moodle 5.1:
+
+1. Actualizar Apache DocumentRoot a `/var/www/html/moodle/public`
+2. Verificar que PHP cumple con el minimo 8.2.0
+3. Verificar compatibilidad de plugins con el nuevo Routing Engine
+4. Probar que todas las URLs responden correctamente despues del cambio
 
 ## Related Resources
 

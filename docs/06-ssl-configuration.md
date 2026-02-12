@@ -74,9 +74,10 @@ sudo vim /etc/httpd/conf.d/moodle.conf
 <VirtualHost *:80>
     ServerName yourdomain.com
     ServerAdmin admin@yourdomain.com
-    DocumentRoot /var/www/html/moodle
+    # IMPORTANTE: En Moodle 5.1, DocumentRoot apunta a /public
+    DocumentRoot /var/www/html/moodle/public
 
-    <Directory /var/www/html/moodle>
+    <Directory /var/www/html/moodle/public>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
@@ -142,9 +143,10 @@ Contenido típico:
 <VirtualHost *:443>
     ServerName yourdomain.com
     ServerAdmin admin@yourdomain.com
-    DocumentRoot /var/www/html/moodle
+    # IMPORTANTE: En Moodle 5.1, DocumentRoot apunta a /public
+    DocumentRoot /var/www/html/moodle/public
 
-    <Directory /var/www/html/moodle>
+    <Directory /var/www/html/moodle/public>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
@@ -609,5 +611,5 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
-**Fecha:** 2026-02-02
-**Versión:** 1.0.0
+**Fecha:** 2026-02-11
+**Versión:** 1.1.0

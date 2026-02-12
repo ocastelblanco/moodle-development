@@ -71,9 +71,11 @@ Internet
 │  │  ┌──────────────────────────────────────────────┐  │  │
 │  │  │  Moodle 5.1                                  │  │  │
 │  │  │  /var/www/html/moodle                        │  │  │
+│  │  │  - DocumentRoot: /public                     │  │  │
 │  │  │  - Core de Moodle                            │  │  │
-│  │  │  - Plugins                                   │  │  │
+│  │  │  - Plugins (sobre /public)                   │  │  │
 │  │  │  - Themes                                    │  │  │
+│  │  │  - Routing Engine                            │  │  │
 │  │  └──────────────────────────────────────────────┘  │  │
 │  └────────────────────────────────────────────────────┘  │
 │                                                          │
@@ -233,11 +235,13 @@ Outbound:
 **Configuración:**
 - **Origin:** EC2 Elastic IP o dominio
 - **Cache Behavior:**
-  - `/theme/` → TTL 86400s (24h)
-  - `/pluginfile.php/` → TTL 3600s (1h)
+  - `/theme/` → TTL 86400s (24h) - servido desde /public
+  - `/pluginfile.php/` → TTL 3600s (1h) - procesado por Routing Engine
   - `/` → No cache (dinámico)
 - **Compress:** Habilitado
 - **HTTP/2:** Habilitado
+
+**Nota sobre Moodle 5.1:** Los assets ahora se sirven a través del directorio `/public`. El Routing Engine de Moodle 5.1 maneja las solicitudes de forma transparente.
 
 **Costo:**
 - Primeros 1TB/mes: $0.085/GB
@@ -424,6 +428,133 @@ Esta arquitectura es **Single Server** optimizado. Para alta disponibilidad:
 - RDS connections > 80% max
 - Status check failed
 
+## 🆕 Moodle 5.1: Estructura de Directorios /public
+
+### Cambio Crítico en DocumentRoot
+
+**Anterior (Moodle ≤4.x):**
+```
+DocumentRoot /var/www/html/moodle
+```
+
+**Nuevo (Moodle 5.1+):**
+```
+DocumentRoot /var/www/html/moodle/public
+```
+
+### ¿Por Qué Este Cambio?
+
+1. **Seguridad Mejorada:** Solo archivos en `/public` son accesibles por web
+2. **Separación Clara:** Código de aplicación separado de archivos públicos
+3. **Mejores Prácticas:** Alineado con frameworks modernos (Laravel, Symfony, etc.)
+4. **Routing Engine:** Nuevo motor de procesamiento de solicitudes
+
+### Estructura de Directorios Moodle 5.1
+
+```
+/var/www/html/moodle/
+├── admin/               # Scripts de administración (NO web-accesible)
+│   └── cli/            # Comandos CLI (permanecen aquí)
+├── auth/               # Plugins de autenticación
+├── blocks/             # Bloques de Moodle
+├── course/             # Código de cursos
+├── lib/                # Librerías core
+├── mod/                # Módulos de actividades
+├── theme/              # Temas (código)
+├── config.php          # Configuración (permanece aquí)
+├── public/             # ← NUEVO: DocumentRoot del servidor web
+│   ├── index.php      # Punto de entrada principal
+│   ├── theme/         # Assets de temas (accesibles)
+│   └── ...            # Otros archivos web-accesibles
+└── ...
+```
+
+### Lo Que NO Cambia
+
+| Elemento | Ubicación | Notas |
+|----------|-----------|-------|
+| **Moodledata** | `/moodledata` | Sin cambios |
+| **Config.php** | `/var/www/html/moodle/config.php` | Permanece en raíz de Moodle |
+| **Scripts CLI** | `/var/www/html/moodle/admin/cli/` | Por encima de /public |
+| **Plugins core** | `/var/www/html/moodle/{auth,mod,blocks,...}` | Sin cambios |
+
+### Lo Que SÍ Cambia
+
+| Elemento | Cambio |
+|----------|--------|
+| **Apache DocumentRoot** | Apuntar a `/var/www/html/moodle/public` |
+| **Assets estáticos** | Ahora servidos desde `/public/theme/`, `/public/pluginfile.php`, etc. |
+| **Routing** | Nuevo Routing Engine procesa todas las solicitudes |
+
+### Configuración de Apache para Moodle 5.1
+
+```apache
+<VirtualHost *:80>
+    ServerName moodle.yourdomain.com
+    DocumentRoot /var/www/html/moodle/public
+
+    <Directory /var/www/html/moodle/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Moodledata NO debe ser accesible por web
+    <Directory /moodledata>
+        Require all denied
+    </Directory>
+</VirtualHost>
+```
+
+### Migración de Plugins
+
+Después de actualizar a Moodle 5.1:
+
+1. **Plugins estándar:** Migran automáticamente
+2. **Plugins personalizados:** Pueden requerir ajustes
+3. **Verificación:** Ejecutar `admin/cli/check_database_schema.php`
+4. **Reubicación manual:** Solo si el plugin tiene assets web específicos
+
+### Routing Engine
+
+El nuevo motor de enrutamiento:
+- **Activo por defecto** (fuertemente recomendado)
+- Procesa todas las solicitudes a través de `/public/index.php`
+- Permite URLs más limpias
+- Mejora el rendimiento de solicitudes
+- Maneja redirecciones de forma más eficiente
+
+### Requisitos Técnicos Moodle 5.1
+
+| Componente | Mínimo | Recomendado |
+|------------|--------|-------------|
+| **PHP** | 8.2.0 | 8.3.x o 8.4.x |
+| **PostgreSQL** | 15.0 | 16+ |
+| **MySQL** | 8.4.0 | 8.4+ |
+| **MariaDB** | 10.11.0 | 10.11.15+ ✅ |
+| **max_input_vars** | 5000 | 5000+ ✅ |
+
+**Extensiones PHP adicionales:** `sodium` (requerida, ya incluida ✅)
+
+### Camino de Actualización
+
+**Desde Moodle 4.x a 5.1:**
+
+**Requisito:** Estar en Moodle 4.2.3 o superior
+
+**Pasos:**
+1. Backup completo (código + base de datos)
+2. Activar modo mantenimiento
+3. Actualizar código de Moodle a 5.1
+4. **Reconfigurar Apache:** DocumentRoot → `/var/www/html/moodle/public`
+5. Ejecutar `admin/cli/upgrade.php --non-interactive`
+6. Verificar plugins (relocación si es necesario)
+7. Limpiar cachés
+8. Desactivar modo mantenimiento
+9. Verificar funcionamiento del Routing Engine
+
+**IMPORTANTE:** Probar en entorno de staging primero.
+
 ## 🎯 Próximos Pasos
 
 1. Revisar [Prerequisitos](02-prerequisites.md)
@@ -432,5 +563,5 @@ Esta arquitectura es **Single Server** optimizado. Para alta disponibilidad:
 
 ---
 
-**Fecha:** 2026-02-02
-**Versión:** 1.0.0
+**Fecha:** 2026-02-11
+**Versión:** 1.1.0

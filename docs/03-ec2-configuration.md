@@ -146,6 +146,8 @@ El código Terraform incluye un script de User Data que:
 ✅ Crea archivo de configuración (/root/moodle-config.env)
 ```
 
+**Nota importante para Moodle 5.1:** El directorio `/moodledata` permanece sin cambios en su ubicación. Sin embargo, el DocumentRoot de Apache ahora apuntará a `/var/www/html/moodle/public` debido al nuevo Routing Engine de Moodle 5.1.
+
 Ver código completo en: [terraform/ec2.tf](../terraform/ec2.tf)
 
 ## 💾 Almacenamiento EBS
@@ -625,5 +627,5 @@ sudo ausearch -m USER_LOGIN -ts recent
 
 ---
 
-**Fecha:** 2026-02-02
-**Versión:** 1.0.0
+**Fecha:** 2026-02-11
+**Versión:** 1.1.0

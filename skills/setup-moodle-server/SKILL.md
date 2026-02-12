@@ -106,6 +106,8 @@ The script automates all steps described below.
    sudo chmod -R 770 /moodledata
    ```
 
+   **Nota Moodle 5.1:** Al clonar Moodle, el directorio `/public` se crea automaticamente. Apache DocumentRoot debe apuntar a `/var/www/html/moodle/public`.
+
 9. **Configure SELinux:**
    ```bash
    sudo setsebool -P httpd_can_network_connect 1

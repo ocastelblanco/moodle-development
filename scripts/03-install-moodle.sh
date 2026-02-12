@@ -80,8 +80,8 @@ echo "✓ PHP-FPM is running"
 
 # Check PHP version
 PHP_VERSION=$(php -r "echo PHP_VERSION;" | cut -d'.' -f1,2)
-if (( $(echo "$PHP_VERSION < 8.1" | bc -l) )); then
-    echo -e "${RED}ERROR: PHP 8.1+ required, found $PHP_VERSION${NC}"
+if (( $(echo "$PHP_VERSION < 8.2" | bc -l) )); then
+    echo -e "${RED}ERROR: PHP 8.2+ required, found $PHP_VERSION${NC}"
     exit 1
 fi
 echo "✓ PHP version: $PHP_VERSION"
@@ -297,6 +297,7 @@ echo -e "\n⚠️  Important Next Steps:"
 echo ""
 echo "  1. Configure Apache virtual host:"
 echo "     ./04-configure-ssl.sh"
+echo "     IMPORTANTE: DocumentRoot debe apuntar a /var/www/html/moodle/public"
 echo ""
 echo "  2. Optimize system:"
 echo "     ./05-optimize-system.sh"
@@ -308,6 +309,9 @@ echo "  4. Access Moodle and complete initial setup:"
 echo "     https://$DOMAIN_NAME"
 echo ""
 echo "  5. IMPORTANT: Change admin password after first login!"
+echo ""
+echo "  6. Moodle 5.1: Verificar que Apache DocumentRoot apunta a"
+echo "     /var/www/html/moodle/public (no a /var/www/html/moodle)"
 echo ""
 
 echo -e "\n📝 Useful Commands:"

@@ -89,6 +89,10 @@ export ROUTE53_ZONE_ID=""             # Your Route 53 hosted zone ID
 # Moodle Configuration
 #############################################
 
+# NOTE: Moodle 5.1 requires Apache DocumentRoot to point to
+# /var/www/html/moodle/public (not /var/www/html/moodle)
+# PHP 8.2+ is required (8.4.x recommended)
+
 # Moodle version (branch name from git)
 export MOODLE_VERSION="MOODLE_51_STABLE"
 

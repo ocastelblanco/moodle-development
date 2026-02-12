@@ -91,9 +91,9 @@ sudo vim /etc/httpd/conf.d/moodle.conf
 <VirtualHost *:80>
     ServerName yourdomain.com
     ServerAdmin admin@yourdomain.com
-    DocumentRoot /var/www/html/moodle
+    DocumentRoot /var/www/html/moodle/public
 
-    <Directory /var/www/html/moodle>
+    <Directory /var/www/html/moodle/public>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted

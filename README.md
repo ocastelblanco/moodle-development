@@ -15,6 +15,7 @@ Conjunto completo de herramientas, scripts y documentación para desplegar Moodl
 - ✅ **CDN CloudFront** - Optimización de assets estáticos
 - ✅ **PHP-FPM optimizado** - Configuración basada en memoria disponible
 - ✅ **Sistema de actualizaciones** - Moodle auto-update configurado
+- ✅ **Moodle 5.1 /public** - Estructura de directorios moderna con Routing Engine
 
 ## 📋 Requisitos Previos
 
@@ -51,7 +52,10 @@ Conjunto completo de herramientas, scripts y documentación para desplegar Moodl
      │  │   Apache 2.4 + PHP 8.4  │  │
      │  │   ┌─────────────────┐   │  │
      │  │   │  Moodle 5.1     │   │  │
-     │  │   │  (code + cache) │   │  │
+     │  │   │  /var/www/html/  │   │  │
+     │  │   │   moodle         │   │  │
+     │  │   │  DocumentRoot:   │   │  │
+     │  │   │   /public        │   │  │
      │  │   └─────────────────┘   │  │
      │  └─────────────────────────┘  │
      │  ┌─────────────────────────┐  │
@@ -76,6 +80,8 @@ Conjunto completo de herramientas, scripts y documentación para desplegar Moodl
 | **RDS** | db.t4g.micro | MariaDB 10.11.15+ | Base de datos |
 | **Elastic IP** | - | IPv4 estática | Dirección pública fija |
 | **CloudFront** | - | CDN global | Cache de assets estáticos |
+
+**Nota:** En Moodle 5.1, el DocumentRoot del servidor web debe apuntar a `/var/www/html/moodle/public` (no a `/var/www/html/moodle`). El código de Moodle, plugins y config.php permanecen en `/var/www/html/moodle`.
 
 ## 🚀 Quick Start
 
@@ -376,6 +382,8 @@ sudo -u apache git pull
 sudo -u apache /usr/bin/php admin/cli/upgrade.php --non-interactive
 ```
 
+**Nota sobre estructura de directorios:** Los comandos CLI permanecen en `/var/www/html/moodle/admin/cli/` (por encima del directorio `/public`). Solo el DocumentRoot del servidor web cambia a apuntar a `/var/www/html/moodle/public`.
+
 ### Actualizaciones del Sistema
 
 ```bash
@@ -443,6 +451,66 @@ Los skills están basados en el **proyecto ACG Calidad** (Moodle 4.1 → 5.1), i
 
 **Documentación completa**: [skills/README.md](skills/README.md)
 
+## 🆕 Novedades de Moodle 5.1
+
+### Cambios en la Estructura de Directorios
+
+**DocumentRoot movido a /public:**
+- **Anterior (≤4.x):** DocumentRoot apuntaba a `/var/www/html/moodle`
+- **Nuevo (5.1+):** DocumentRoot debe apuntar a `/var/www/html/moodle/public`
+- **Razón:** Mejora de seguridad, todos los archivos web-accesibles ahora están dentro de `/public`
+
+### Routing Engine
+
+Moodle 5.1 introduce un nuevo motor de enrutamiento que:
+- Maneja el procesamiento de solicitudes de forma más eficiente
+- Permite URLs más limpias
+- Mejora el rendimiento general
+- **Recomendación:** Activado por defecto (fuertemente recomendado)
+
+### Requisitos Técnicos Actualizados
+
+| Componente | Requisito Mínimo | Versiones Soportadas |
+|------------|------------------|----------------------|
+| **PHP** | 8.2.0 | 8.2.x, 8.3.x, 8.4.x |
+| **PostgreSQL** | 15.0 | 15+ |
+| **MySQL** | 8.4.0 | 8.4+ |
+| **MariaDB** | 10.11.0 | 10.11+ (✅ proyecto usa 10.11.15) |
+
+### Extensiones PHP Requeridas
+
+Todas las extensiones anteriores más:
+- **sodium** (✅ ya incluida en el proyecto)
+- **max_input_vars >= 5000** (✅ ya configurado)
+
+### Migración desde Moodle 4.x
+
+**Path mínimo de actualización:** Moodle 4.2.3+
+
+**Pasos adicionales para 5.1:**
+1. Actualizar código de Moodle
+2. **Reconfigurar Apache:** Cambiar DocumentRoot a `/var/www/html/moodle/public`
+3. Ejecutar upgrade CLI
+4. **Migrar plugins:** Mover plugins a nueva estructura (si es necesario)
+5. Verificar funcionamiento del Routing Engine
+
+**Importante:**
+- `/moodledata` permanece sin cambios en `/moodledata`
+- Scripts CLI permanecen en `/var/www/html/moodle/admin/cli/`
+- `config.php` permanece en `/var/www/html/moodle/config.php`
+- Solo cambia el punto de entrada web (DocumentRoot → `/public`)
+
+### Nuevas Características
+
+- **Controles de acceso AI:** Gestión mejorada de acceso de usuarios a características de IA
+- **Activity Chooser:** Mejoras en la interfaz de selección de actividades
+- **Resumen centralizado de cursos:** Vista unificada de progreso en cursos
+- **TinyMCE mejorado:** Editor de texto enriquecido con nuevas características
+- **Report Builder:** Mejoras en la generación de informes personalizados
+- **Módulo de Tareas:** Mejoras en la gestión de asignaciones
+- **CAPTCHA:** Protección en forgot_password.php
+- **Formato de curso social:** Deshabilitado por defecto
+
 ## 📞 Soporte y Contribuciones
 
 Este conjunto de herramientas está diseñado para ser modular y extensible. Puedes:
@@ -462,6 +530,15 @@ Este conjunto de herramientas está diseñado para ser modular y extensible. Pue
 
 ## 📝 Changelog
 
+### v1.1.0 (2026-02-11)
+
+- **Moodle 5.1 /public:** Actualización de documentación para reflejar la nueva estructura de directorios
+- **Routing Engine:** Documentación del nuevo motor de enrutamiento de Moodle 5.1
+- **PHP 8.2+:** Requisitos actualizados (PHP 8.2.0 mínimo, soporte 8.2.x, 8.3.x, 8.4.x)
+- **DocumentRoot:** Apache debe apuntar a `/var/www/html/moodle/public`
+- **Migración de plugins:** Notas sobre relocación de plugins después de actualizar a 5.1
+- **Requisitos de base de datos:** PostgreSQL 15+, MySQL 8.4+, MariaDB 10.11+
+
 ### v1.0.0 (2026-02-02)
 
 - Estructura inicial de skills
@@ -478,4 +555,4 @@ Este conjunto de herramientas está diseñado para ser modular y extensible. Pue
 **Desarrollado por:** Oliver Castelblanco (@ocastelblanco)
 **Basado en:** Proyecto ACG Calidad - Actualización Moodle 4.1 → 5.1
 **Fecha:** Febrero 2026
-**Versión:** 1.0.0
+**Versión:** 1.1.0

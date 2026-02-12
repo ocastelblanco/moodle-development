@@ -36,7 +36,7 @@ This skill performs:
 - Server configured with LAMP stack
 - RDS MariaDB database available
 - Apache and PHP-FPM running
-- `/moodledata` directory created
+- `/moodledata` directory created with subdirectories
 - Configuration file at `/root/moodle-config.env`
 
 ### Available automation
@@ -214,12 +214,34 @@ After installation:
    sudo tail -f /var/log/cron
    ```
 
+### Configuracion Apache para Moodle 5.1
+
+**IMPORTANTE:** Moodle 5.1 requiere que el DocumentRoot de Apache apunte al subdirectorio `/public`:
+
+```apache
+<VirtualHost *:80>
+    ServerName yourdomain.com
+    DocumentRoot /var/www/html/moodle/public
+
+    <Directory /var/www/html/moodle/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
+
+El nuevo motor de enrutamiento (Routing Engine) de Moodle 5.1 procesa todas las solicitudes a traves del directorio `/public`. El directorio `/public` se crea automaticamente al clonar el repositorio de Moodle.
+
+**Nota:** Los paths CLI no cambian. Siguen en `/var/www/html/moodle/admin/cli/...` y `config.php` permanece en `/var/www/html/moodle/config.php`.
+
 ### Post-installation tasks
 
-1. **Create Apache virtual host** (see `/configure-ssl` skill)
-2. **Configure SSL/HTTPS** (required before production)
-3. **Optimize system** (see `/optimize-system` skill)
-4. **Complete Moodle setup in browser:**
+1. **Configurar Apache DocumentRoot** a `/var/www/html/moodle/public`
+2. **Create Apache virtual host** (see `/configure-ssl` skill)
+3. **Configure SSL/HTTPS** (required before production)
+4. **Optimize system** (see `/optimize-system` skill)
+5. **Complete Moodle setup in browser:**
    - Access https://yourdomain.com
    - Login with admin credentials
    - Complete initial configuration wizard

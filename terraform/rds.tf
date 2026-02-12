@@ -1,4 +1,8 @@
 # RDS MariaDB Configuration for Moodle 5.1
+# NOTE: Moodle 5.1 database requirements:
+# - MariaDB 10.11+ (current: 10.11.15 ✓)
+# - MySQL 8.4+
+# - PostgreSQL 15+
 
 #############################################
 # RDS Security Group

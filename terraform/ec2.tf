@@ -248,6 +248,9 @@ locals {
 
     chmod 600 /root/moodle-config.env
 
+    # NOTE: Moodle 5.1 uses /var/www/html/moodle/public as DocumentRoot
+    # Apache configuration must point to the /public subdirectory
+
     echo "=== EC2 Initialization Completed ==="
     echo "Next steps: Run setup scripts from skills/scripts/"
 

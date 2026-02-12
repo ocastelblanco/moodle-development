@@ -109,6 +109,9 @@ swap_size_gb = 0  # 0 = auto-calculate
 # Moodle Configuration
 #############################################
 
+# NOTE: Moodle 5.1 requires Apache DocumentRoot to point to /var/www/html/moodle/public
+# PHP 8.2+ is required (8.4.x recommended)
+
 moodle_version        = "MOODLE_51_STABLE"
 moodle_admin_user     = "admin"
 moodle_admin_password = "AdminPass123!"  # CHANGE THIS!

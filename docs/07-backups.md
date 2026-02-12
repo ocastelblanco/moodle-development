@@ -59,6 +59,7 @@ Este script configura:
 # Cron: Diario a las 3 AM
 # Script: /usr/local/bin/moodle-backup-db.sh
 # Ubicación: /var/backups/moodle/database/
+# NOTA: Los backups de base de datos NO son afectados por cambios en Moodle 5.1
 ```
 
 ### Backup Manual
@@ -137,12 +138,14 @@ fi
 # Ya configurado: Semanal domingos 4 AM
 # Script: /usr/local/bin/moodle-backup-data.sh
 # Ubicación: /var/backups/moodle/moodledata/
+# NOTA: El directorio /moodledata NO cambia de ubicación en Moodle 5.1
 ```
 
 ### Backup Manual
 
 ```bash
 # Backup completo (excluye cache/temp)
+# NOTA: Las exclusiones de cache/temp permanecen iguales en Moodle 5.1
 sudo tar -czf moodledata-$(date +%Y%m%d).tar.gz \
     --exclude='/moodledata/cache/*' \
     --exclude='/moodledata/localcache/*' \
@@ -160,6 +163,22 @@ sudo tar -czf - \
 # Verificar integridad
 tar -tzf moodledata-$(date +%Y%m%d).tar.gz > /dev/null && echo "OK" || echo "ERROR"
 ```
+
+### Backup del Código Moodle
+
+**NUEVO en Moodle 5.1:** El código ahora incluye el subdirectorio `/public` que debe ser incluido en los backups.
+
+```bash
+# Backup del código Moodle (incluye el nuevo directorio /public)
+sudo tar -czf moodle-code-$(date +%Y%m%d).tar.gz \
+    --exclude='/var/www/html/moodle/.git' \
+    /var/www/html/moodle
+
+# Verificar que /public está incluido
+tar -tzf moodle-code-$(date +%Y%m%d).tar.gz | grep "public/" | head -5
+```
+
+**Importante:** En Moodle 5.1, asegúrate de que los backups del código incluyan el nuevo directorio `/public` junto con todos los archivos en el nivel superior (config.php, admin/, lib/, theme/, etc.).
 
 ### Backup Diferencial (Más Rápido)
 
@@ -646,5 +665,5 @@ echo "$(date): Backup test successful" >> /var/log/backup-tests.log
 
 ---
 
-**Fecha:** 2026-02-02
-**Versión:** 1.0.0
+**Fecha:** 2026-02-11
+**Versión:** 1.1.0

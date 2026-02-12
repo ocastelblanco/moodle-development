@@ -1,5 +1,10 @@
 # Variables for Moodle 5.1 AWS Infrastructure
 # Configure these values before running terraform apply
+#
+# NOTE: Moodle 5.1 requirements:
+# - PHP 8.2+ (8.2.x, 8.3.x, 8.4.x supported)
+# - Apache DocumentRoot must point to /var/www/html/moodle/public (not /var/www/html/moodle)
+# - MariaDB 10.11+, MySQL 8.4+, or PostgreSQL 15+
 
 #############################################
 # General Configuration
@@ -94,7 +99,7 @@ variable "root_volume_size" {
 }
 
 variable "data_volume_size" {
-  description = "Size of data EBS volume for /moodledata in GB"
+  description = "Size of data EBS volume for Moodle data (/moodledata) in GB"
   type        = number
   default     = 25
 }

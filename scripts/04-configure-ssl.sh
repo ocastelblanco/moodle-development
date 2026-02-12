@@ -102,9 +102,9 @@ cat > "$VHOST_FILE" << EOF
     ServerName $DOMAIN_NAME
     ServerAdmin $ADMIN_EMAIL
 
-    DocumentRoot /var/www/html/moodle
+    DocumentRoot /var/www/html/moodle/public
 
-    <Directory /var/www/html/moodle>
+    <Directory /var/www/html/moodle/public>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
