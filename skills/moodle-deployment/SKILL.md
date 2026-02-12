@@ -1,12 +1,9 @@
 ---
 name: moodle-deployment
-description: Complete guide for deploying and managing Moodle 5.1 on AWS. Provides an overview of all available skills and recommended deployment workflow. Use when planning a full deployment or wanting to understand available capabilities. Triggers: "deploy Moodle", "full deployment", "production Moodle", "Moodle on AWS guide".
-user-invocable: false
+description: Complete guide for deploying and managing Moodle 5.1 on AWS. Provides an overview of all available skills and recommended deployment workflow. Use when planning a full deployment, wanting to understand available capabilities, or needing cost estimates and architecture overview. Triggers: "deploy Moodle", "full deployment", "production Moodle", "Moodle on AWS guide", "deployment workflow", "Moodle architecture", "cost estimate".
 ---
 
 # Moodle 5.1 AWS Deployment Guide
-
-Complete guide for deploying and managing Moodle 5.1 on AWS infrastructure. This skill provides an overview of all available deployment skills and recommended workflows.
 
 ## Available Skills
 

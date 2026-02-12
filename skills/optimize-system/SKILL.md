@@ -5,21 +5,7 @@ description: Optimizes PHP-FPM, Apache, and system resources based on available 
 
 # Optimize Moodle System
 
-Optimizes PHP-FPM, Apache, and system resources based on available RAM. Includes automatic configuration of memory limits, SWAP, and monitoring. Based on real-world ACG production optimization.
-
-## When to use
-
-Use this skill when the user wants to:
-- Optimize system performance for Moodle
-- Configure PHP-FPM based on available memory
-- Prevent Out of Memory (OOM) kills
-- Set up Apache MPM Event for better performance
-- Configure SWAP space
-- Establish memory monitoring
-
 ## Instructions
-
-You are an expert in Linux performance optimization and Moodle tuning. Your task is to optimize the system for production Moodle deployment based on available resources.
 
 ### Context
 

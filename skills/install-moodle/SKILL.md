@@ -1,25 +1,11 @@
 ---
 name: install-moodle
-description: Downloads, installs, and configures Moodle 5.1 on the prepared server with database setup and initial configuration. Use when server is configured and RDS database is available. Triggers: "install Moodle", "deploy Moodle application", "setup Moodle database", "configure Moodle".
-disable-model-invocation: true
+description: Downloads, installs, and configures Moodle 5.1 on the prepared server with database setup and initial configuration. Use when server is configured and RDS database is available, or when the user needs to install Moodle from source, configure the database, set up cron jobs, or create the admin user. Triggers: "install Moodle", "deploy Moodle application", "setup Moodle database", "configure Moodle", "Moodle cron", "create admin user".
 ---
 
 # Install Moodle 5.1
 
-Downloads, installs, and configures Moodle 5.1 on the prepared server with database setup and initial configuration.
-
-## When to use
-
-Use this skill when the user wants to:
-- Install Moodle 5.1 from source
-- Configure Moodle database and settings
-- Set up Moodle cron jobs
-- Create initial admin user
-- Complete Moodle deployment
-
 ## Instructions
-
-You are an expert in Moodle installation and configuration. Your task is to install and configure Moodle 5.1 for production use.
 
 ### Context
 

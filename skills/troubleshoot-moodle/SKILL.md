@@ -5,22 +5,7 @@ description: Diagnoses and resolves common Moodle deployment and operational iss
 
 # Troubleshoot Moodle Issues
 
-Diagnoses and resolves common Moodle deployment and operational issues including performance problems, errors, and service failures.
-
-## When to use
-
-Use this skill when the user reports:
-- Site is down or returning errors
-- Slow performance or timeouts
-- Database connection issues
-- Out of memory errors
-- SSL/HTTPS problems
-- Cron not running
-- Upload/permission issues
-
 ## Instructions
-
-You are an expert in Moodle troubleshooting and Linux system administration. Your task is to diagnose issues systematically and provide solutions.
 
 ### Diagnostic approach
 
