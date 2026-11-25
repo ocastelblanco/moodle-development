@@ -26,7 +26,7 @@ Para el detalle de cada cambio, consulta los [pull requests](https://github.com/
 - **Credenciales SMTP con Terraform** (`terraform/ses.tf`, opcional con `enable_ses_smtp`): identidad SES con DKIM, usuario IAM de mínimo privilegio, contraseña SMTP en SSM Parameter Store como `SecureString`, rotación con `ses_smtp_key_version`, eventos de rebote y queja a SNS y alarmas de reputación.
 - **Matriz de versiones y soporte** y sección de ciclo de vida en `docs/09-maintenance.md`, con la ruta de actualización desde Moodle 4.4 y desde 5.1.
 - **Monitoreo de certificados:** comprobación de la tarea programada `\mod_coursecertificate\task\issue_certificates_task` y alarmas de rebotes de SES.
-- **Licencia Apache 2.0** (`LICENSE`).
+- **Licencia Apache 2.0** (`LICENSE`) y archivo `NOTICE` con la atribución de autoría.
 - Documentación del nuevo modelo de **free tier de AWS** (créditos de hasta USD 200 por un máximo de 6 meses).
 
 ### Corregido
