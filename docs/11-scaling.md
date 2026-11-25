@@ -84,7 +84,7 @@ Activación recomendada: primero `enable_compute_autoresize = true` con `compute
 - **Free plan**: hasta 6 meses o hasta agotar créditos (lo que ocurra primero), solo un subconjunto de servicios, sin cobros hasta hacer upgrade.
 - **Paid plan**: todos los servicios, pago por uso al agotar créditos; se puede fijar un límite de gasto mensual desde USD 20. No se puede volver de Paid a Free. Unirse a AWS Organizations termina los créditos.
 - Sin verificar (confirmar en la consola o en https://aws.amazon.com/free/faqs/): tipos de instancia elegibles en el Free plan y qué ocurre al terminar los 6 meses sin upgrade.
-- Escalar consume créditos más rápido: mantén AWS Budgets (`monthly_budget_usd`) activo y ejecuta `report` antes de subir de tamaño. Referencias de precio en el [README](../README.md#-costos-estimados).
+- Escalar consume créditos más rápido: mantén AWS Budgets (`monthly_budget_usd`) activo y ejecuta `report` antes de subir de tamaño. Referencias de precio en el [README](../README.es.md#costos-estimados).
 
 ## Rollback (reducir tamaño)
 

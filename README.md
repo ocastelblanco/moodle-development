@@ -1,602 +1,192 @@
-# Moodle 5.3 LTS AWS Deployment Skills
+<!-- Header block for project -->
+<hr>
 
-Conjunto completo de herramientas, scripts y documentación para desplegar Moodle 5.3 LTS en AWS de forma optimizada, segura y escalable.
+<div align="center">
 
-## 🎯 Características
+<h1 align="center">Moodle 5.3 LTS on AWS: Deployment Skills</h1>
 
-- ✅ **Infrastructure as Code** - Terraform para provisión reproducible
-- ✅ **Scripts automatizados** - Deployment en minutos
-- ✅ **AI Agent Skills** - Skills para Claude Code y otros agentes de IA
-- ✅ **Single server optimizado** - Configuración eficiente de recursos
-- ✅ **RDS MariaDB 11.8** - Base de datos administrada (LTS)
-- ✅ **SSL/HTTPS automático** - Let's Encrypt con renovación automática
-- ✅ **Backups automatizados** - Snapshots y dumps programados
-- ✅ **Monitoreo CloudWatch** - Dashboards y alarmas
-- ✅ **CDN CloudFront** - Optimización de assets estáticos
-- ✅ **PHP-FPM optimizado** - Configuración basada en memoria disponible
-- ✅ **Sistema de actualizaciones** - Moodle auto-update configurado
-- ✅ **Moodle 5.3 LTS /public** - Estructura de directorios moderna con Routing Engine
-- ✅ **Escalado asistido y automatizado** - Reporte de métricas, resize EC2/RDS, crecimiento de EBS, alertas SNS y Budgets (escalado vertical)
-- ✅ **Certificados automáticos con verificación QR** - Emisión y envío por email al aprobar el curso (mod_coursecertificate + tool_certificate)
+**English** | [Español](README.es.md)
 
-## 📋 Requisitos Previos
+</div>
 
-- Cuenta AWS con permisos administrativos
-- AWS CLI configurado (`aws configure`)
-- Terraform >= 1.0
-- SSH key pair creado en AWS
-- Dominio registrado (para SSL)
+<pre align="center">Terraform, scripts and AI agent skills to deploy, run and scale a single-server Moodle 5.3 LTS virtual classroom on AWS, with automatic course certificates.</pre>
 
-## 🏗️ Arquitectura
+<!-- Header block for project -->
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Internet                         │
-└────────────────────┬────────────────────────────────┘
-                     │
-            ┌────────▼────────┐
-            │   Route 53      │  DNS Management
-            │  (your domain)  │
-            └────────┬────────┘
-                     │
-            ┌────────▼────────┐
-            │  CloudFront     │  CDN (opcional)
-            │  (assets)       │
-            └────────┬────────┘
-                     │
-            ┌────────▼────────┐
-            │  Elastic IP     │  52.x.x.x
-            └────────┬────────┘
-                     │
-     ┌───────────────▼───────────────┐
-     │       EC2 Instance            │
-     │  ┌─────────────────────────┐  │
-     │  │   Apache 2.4 + PHP 8.4  │  │
-     │  │   ┌─────────────────┐   │  │
-     │  │   │  Moodle 5.3 LTS │   │  │
-     │  │   │  /var/www/html/  │   │  │
-     │  │   │   moodle         │   │  │
-     │  │   │  DocumentRoot:   │   │  │
-     │  │   │   /public        │   │  │
-     │  │   └─────────────────┘   │  │
-     │  └─────────────────────────┘  │
-     │  ┌─────────────────────────┐  │
-     │  │   EBS Volume (Data)     │  │
-     │  │   /moodledata          │  │
-     │  └─────────────────────────┘  │
-     └───────────────┬───────────────┘
-                     │
-            ┌────────▼────────┐
-            │   RDS MariaDB   │
-            │   11.8 (LTS)    │
-            └─────────────────┘
-```
+[![AI-generated: primarily produced by an AI model](https://img.shields.io/static/v1?label=&message=AI-generated&color=red)](https://nasa-ammos.github.io/slim/?search=Badges) [![Best Practices from SLIM: this project follows SLIM best practices](https://img.shields.io/badge/Best%20Practices%20from-SLIM-blue)](https://nasa-ammos.github.io/slim/) ![Moodle 5.3 LTS](https://img.shields.io/badge/Moodle-5.3%20LTS-orange) ![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777bb4) ![MariaDB 11.8](https://img.shields.io/badge/MariaDB-11.8%20LTS-003545) ![Amazon Linux 2023](https://img.shields.io/badge/Amazon%20Linux-2023-ff9900)
 
-### Componentes
+This repository is a toolkit for standing up a production Moodle on AWS with the longest support window available: Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8 and Amazon Linux 2023 on Graviton (ARM64). It is meant for people who run virtual classrooms and for AI agents (Claude Code and similar) that execute the deployment through the bundled skills.
 
-| Componente | Tipo | Especificación | Propósito |
-|------------|------|----------------|-----------|
-| **EC2** | t4g.medium/large | 2-4 vCPU, 4-8 GB RAM | Servidor web/aplicación |
-| **EBS Root** | gp3 | 15 GB | Sistema operativo |
-| **EBS Data** | gp3 | 25-50 GB | Moodledata (archivos usuarios) |
-| **RDS** | db.t4g.micro | MariaDB 11.8 (LTS) | Base de datos |
-| **Elastic IP** | - | IPv4 estática | Dirección pública fija |
-| **CloudFront** | - | CDN global | Cache de assets estáticos |
+[Docs](docs/) | [Skills](skills/) | [Issue Tracker](https://github.com/ocastelblanco/moodle-development/issues) | [Pull Requests](https://github.com/ocastelblanco/moodle-development/pulls)
 
-**Nota:** En Moodle 5.3 (estructura `/public` vigente desde 5.1), el DocumentRoot del servidor web debe apuntar a `/var/www/html/moodle/public` (no a `/var/www/html/moodle`). El código de Moodle, plugins y config.php permanecen en `/var/www/html/moodle`.
+## Features
 
-### Matriz de versiones y soporte
+* **Infrastructure as Code:** Terraform for EC2, RDS, EBS, CloudFront, CloudWatch and security groups.
+* **Numbered deployment scripts (01-09):** from provisioning to scaling.
+* **11 AI agent skills:** an orchestrator plus one skill per phase (see [Skills](#skills)).
+* **Automatic course certificates:** issued when a student completes the course and reaches a minimum grade, emailed as PDF through Amazon SES, with public verification by code/QR (`mod_coursecertificate` + `tool_certificate`).
+* **SES SMTP credentials with Terraform (opt-in):** least-privilege IAM user, password stored in SSM Parameter Store, rotation by bumping one variable.
+* **Vertical scaling, manual and automatic:** a metrics report with recommendations, EC2/RDS/EBS resizing, EBS auto-growth, SNS alerts and AWS Budgets.
+* **HTTPS, backups and monitoring:** Let's Encrypt, 3-2-1 backups, CloudWatch dashboards and alarms.
 
-| Componente | Versión | Soporte / ciclo de vida |
-|------------|---------|-------------------------|
-| **Moodle** | 5.3 LTS (`MOODLE_503_STABLE`) | Soporte general hasta ~oct 2027; parches de seguridad hasta ~oct 2029 |
-| **PHP** | 8.4 (paquetes `php8.4-*` de AL2023) | Parches de seguridad hasta 31-dic-2028 (PHP 8.3 es el mínimo; 8.5 no está soportado por Moodle 5.3) |
-| **MariaDB** | RDS for MariaDB 11.8 | LTS comunitaria (Moodle 5.3 exige >= 11.4) |
-| **Sistema operativo** | Amazon Linux 2023 (ARM64, Graviton) | Fin de soporte 30-jun-2029 |
+## Contents
 
-**¿Por qué NO Ubuntu 26.04?** Ubuntu 26.04 distribuye PHP 8.5, versión que Moodle 5.3 aún no soporta. Amazon Linux 2023 permite fijar PHP 8.4 con paquetes `php8.4-*` que siguen el ciclo de vida upstream.
+* [Quick Start](#quick-start)
+* [Version Matrix](#version-matrix)
+* [Skills](#skills)
+* [Estimated Costs](#estimated-costs)
+* [Changelog](#changelog)
+* [FAQ](#frequently-asked-questions-faq)
+* [Contributing Guide](#contributing)
+* [License](#license)
+* [Support](#support)
 
-**¿Por qué NO MariaDB 10.11?** Moodle 5.3 elevó el mínimo a MariaDB 11.4.0; 10.11 ya no es válida. Se usa RDS for MariaDB 11.8 (LTS).
+## Quick Start
 
-## 🚀 Quick Start
+This is the short path. The step-by-step guides live in [docs/](docs/).
 
-### Opción 1: Deployment Completo Automatizado (Recomendado)
+### Requirements
+
+* AWS account with administrator permissions and AWS CLI configured (`aws configure`).
+* Terraform >= 1.4.
+* An EC2 key pair in the target region.
+* A registered domain (needed for SSL and for SES email).
+* Amazon SES out of the sandbox before sending real email. AWS approves this in 24-72 hours and it needs a manual request.
+
+### Setup Instructions
+
+1. Clone the repository and enter it.
+
+   ```bash
+   git clone https://github.com/ocastelblanco/moodle-development.git
+   cd moodle-development
+   ```
+
+2. Create your variable files from the examples and fill them in.
+
+   ```bash
+   cp config/variables.sh.example config/variables.sh
+   cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+   ```
+
+3. Provision the infrastructure from your machine.
+
+   ```bash
+   cd scripts && ./01-provision-infrastructure.sh
+   ```
+
+### Run Instructions
+
+Scripts 02 to 08 run **on the EC2 instance** as root, in order:
 
 ```bash
-# 1. Clonar o navegar al directorio
-cd skills/
-
-# 2. Configurar variables
-cp config/variables.sh.example config/variables.sh
-# Editar variables.sh con tus valores
-
-# 3. Provisionar infraestructura (Terraform)
-cd terraform/
-terraform init
-terraform plan
-terraform apply
-
-# 4. Configurar servidor y desplegar Moodle
-cd ../scripts/
-./01-provision-infrastructure.sh
-./02-setup-server.sh
-./03-install-moodle.sh
-./04-configure-ssl.sh
-./05-optimize-system.sh
+./02-setup-server.sh        # Apache, PHP 8.4, MariaDB client
+./03-install-moodle.sh      # Moodle 5.3 LTS (MOODLE_503_STABLE), DocumentRoot /public
+./04-configure-ssl.sh       # Let's Encrypt
+./05-optimize-system.sh     # PHP-FPM and system tuning
 ./06-setup-backups.sh
 ./07-setup-monitoring.sh
-./08-setup-certificates.sh   # Requiere SMTP de Amazon SES configurado
+./08-setup-certificates.sh  # needs SES SMTP configured
+```
 
-# 5. (Opcional, paso 9) Escalado: reporte de métricas y resize manual asistido
-# Se ejecuta desde tu máquina con AWS CLI, no en la instancia
+Script 09 runs **from your machine** and is meant for day-two operations:
+
+```bash
 ./09-scale-infrastructure.sh report
 ```
 
-### Opción 2: Step-by-Step Manual
-
-Sigue la documentación detallada en [docs/](docs/):
-
-1. [Visión General de Arquitectura](docs/01-architecture-overview.md)
-2. [Prerequisitos](docs/02-prerequisites.md)
-3. [Configuración EC2](docs/03-ec2-configuration.md)
-4. [Instalación de Moodle](docs/04-moodle-installation.md)
-5. [Optimización del Sistema](docs/05-optimization.md)
-6. [Configuración SSL](docs/06-ssl-configuration.md)
-7. [Sistema de Backups](docs/07-backups.md)
-8. [Monitoreo CloudWatch](docs/08-monitoring.md)
-9. [Mantenimiento](docs/09-maintenance.md)
-10. [Certificados automáticos](docs/10-certificates.md)
-11. [Escalado de infraestructura](docs/11-scaling.md)
-
-### Opción 3: AI Agent Deployment (Claude Code, ChatGPT, etc.)
-
-Utiliza los **AI Agent Skills** para deployment autónomo con agentes de inteligencia artificial:
-
-```bash
-# Con Claude Code (CLI)
-claude "Deploy production Moodle 5.3 LTS on AWS t4g.medium with RDS MariaDB,
-        SSL, backups to S3, and CloudWatch monitoring. Use the skills in
-        skills/ directory"
-```
-
-O simplemente:
-
-```
-"Deploy Moodle 5.3 LTS following the skills in skills/"
-```
-
-**El agente de IA ejecutará automáticamente:**
-
-1. 🏗️ Provisión de infraestructura AWS (Terraform)
-2. ⚙️ Configuración del servidor LAMP
-3. 📦 Instalación de Moodle 5.3 LTS
-4. 🔒 Configuración SSL/HTTPS
-5. ⚡ Optimización del sistema
-6. 💾 Setup de backups automáticos
-7. 📊 Configuración de monitoreo
-8. 🎓 Certificados automáticos con verificación QR
-
-**Ventajas:**
-
-- ✅ Deployment completamente autónomo
-- ✅ El agente lee y ejecuta cada skill
-- ✅ Troubleshooting automático de errores
-- ✅ Verificación de cada paso
-- ✅ ~45-60 minutos para deployment completo
-
-**Skills disponibles:** Ver documentación completa en [skills/moodle-deployment/SKILL.md](skills/moodle-deployment/SKILL.md)
-
-**Más información:** Consulta la [skill orquestadora `moodle-deployment`](skills/moodle-deployment/SKILL.md) para:
-- Lista completa de skills disponibles
-- Cómo usar con Claude Code, ChatGPT u otros agentes
-- Ejemplos de prompts para diferentes escenarios
-- Arquitectura y flujo de trabajo de los skills
-
-## 📂 Estructura del Proyecto
-
-```
-moodle-development/
-├── README.md                    # Este archivo
-├── skills/                      # 🤖 AI Agent Skills (Claude Code, etc.)
-│   ├── moodle-deployment/SKILL.md
-│   ├── provision-infrastructure/SKILL.md
-│   ├── setup-moodle-server/SKILL.md
-│   ├── install-moodle/SKILL.md
-│   ├── configure-ssl/SKILL.md
-│   ├── optimize-system/SKILL.md
-│   ├── setup-backups/SKILL.md
-│   ├── setup-monitoring/SKILL.md
-│   ├── setup-certificates/SKILL.md
-│   ├── scale-infrastructure/SKILL.md
-│   └── troubleshoot-moodle/SKILL.md
-├── docs/                        # Documentación técnica detallada
-│   ├── 01-architecture-overview.md
-│   ├── 02-prerequisites.md
-│   ├── 03-ec2-configuration.md
-│   ├── 04-moodle-installation.md
-│   ├── 05-optimization.md
-│   ├── 06-ssl-configuration.md
-│   ├── 07-backups.md
-│   ├── 08-monitoring.md
-│   ├── 09-maintenance.md
-│   ├── 10-certificates.md
-│   └── 11-scaling.md
-├── terraform/                   # Infrastructure as Code
-│   ├── main.tf                  # Configuración principal
-│   ├── variables.tf             # Variables de entrada
-│   ├── outputs.tf               # Outputs (IPs, IDs, etc)
-│   ├── ec2.tf                   # Instancia EC2 + EBS
-│   ├── rds.tf                   # Base de datos RDS
-│   ├── security-groups.tf       # Security Groups
-│   ├── cloudwatch.tf            # Alarmas y dashboards
-│   └── cloudfront.tf            # CDN (opcional)
-├── scripts/                     # Scripts de automatización
-│   ├── 01-provision-infrastructure.sh
-│   ├── 02-setup-server.sh
-│   ├── 03-install-moodle.sh
-│   ├── 04-configure-ssl.sh
-│   ├── 05-optimize-system.sh
-│   ├── 06-setup-backups.sh
-│   ├── 07-setup-monitoring.sh
-│   ├── 08-setup-certificates.sh
-│   ├── 09-scale-infrastructure.sh
-│   └── utilities/
-│       ├── health-check.sh
-│       ├── memory-monitor.sh
-│       └── backup-restore.sh
-├── config/                      # Archivos de configuración
-│   ├── variables.sh.example
-│   ├── php-fpm-optimized.conf
-│   ├── apache-moodle.conf
-│   └── moodle-cron
-└── templates/                   # Templates y configs
-    ├── config.php.template
-    └── ssl-renewal.sh
-```
-
-## ⚙️ Configuración de Variables
-
-Antes de ejecutar, configura tus variables en `config/variables.sh`:
-
-```bash
-# AWS Configuration
-export AWS_PROFILE="default"
-export AWS_REGION="us-east-1"
-export KEY_PAIR_NAME="your-key-pair"
-
-# Instance Configuration
-export INSTANCE_TYPE="t4g.medium"  # o t4g.large
-export AMI_ID="ami-xxxxxxxxx"      # Amazon Linux 2023 ARM64
-
-# Domain Configuration
-export DOMAIN_NAME="moodle.yourdomain.com"
-export ADMIN_EMAIL="admin@yourdomain.com"
-
-# Moodle Configuration
-export MOODLE_VERSION="5.3"
-export DB_NAME="moodle"
-export DB_USER="moodleuser"
-export DB_PASSWORD="your-secure-password"
-
-# Optimization
-export PHP_FPM_MAX_CHILDREN="15"   # Ajustar según RAM
-export ENABLE_CLOUDFRONT="false"   # true/false
-```
-
-## 🔧 Optimizaciones Incluidas
-
-### 1. PHP-FPM Optimizado
-
-Configuración automática basada en memoria disponible:
-
-| RAM Disponible | max_children | Memoria Teórica |
-|----------------|--------------|-----------------|
-| 4 GB (t4g.medium) | 15 | ~3 GB |
-| 8 GB (t4g.large) | 35 | ~7 GB |
-
-### 2. Apache Optimizado
-
-- MPM Event (mejor performance que Prefork)
-- KeepAlive configurado óptimamente
-- Compresión mod_deflate
-- Cache headers para assets estáticos
-
-### 3. Sistema Operativo
-
-- SWAP configurado (2 GB)
-- Límites de archivos aumentados
-- TCP/IP optimizado
-- Firewall (firewalld) configurado
+### Usage Examples
 
-### 4. Moodle
+* **Let an AI agent do it:** `claude "Deploy Moodle 5.3 LTS on AWS following the skills in skills/"`. Start from the `moodle-deployment` skill.
+* **Check whether the server needs more capacity:** `./scripts/09-scale-infrastructure.sh report`.
+* **Enable automatic scaling:** set `enable_compute_autoresize` and `scaling_alert_emails` in `terraform.tfvars`. It starts in `notify` mode, which only emails recommendations. See [docs/11-scaling.md](docs/11-scaling.md).
+* **Manage SES SMTP credentials with Terraform:** set `enable_ses_smtp = true`. Enable the encrypted S3 backend first, because the SMTP password is kept in Terraform state. See [docs/10-certificates.md](docs/10-certificates.md).
 
-- Cron optimizado (cada minuto)
-- Cache configurado (file cache + opcache)
-- Session handler: database
-- Límites de subida ajustados
-
-## 📊 Costos Estimados
+## Version Matrix
 
-### Configuración Básica (t4g.medium)
+| Component | Version | Support |
+|-----------|---------|---------|
+| Moodle | 5.3 LTS (`MOODLE_503_STABLE`) | General support to ~Oct 2027, security to ~Oct 2029 |
+| PHP | 8.4 (`php8.4-*` on AL2023) | Security to 31 Dec 2028. Moodle 5.3 needs >= 8.3 and does not support 8.5 |
+| Database | RDS for MariaDB 11.8 (LTS) | Moodle 5.3 requires MariaDB >= 11.4 |
+| OS | Amazon Linux 2023 (ARM64) | End of support 30 Jun 2029 |
 
-| Servicio | Especificación | Costo/mes |
-|----------|----------------|-----------|
-| EC2 | t4g.medium (4GB) | ~$24 |
-| EBS | 15GB gp3 (root) | ~$1.50 |
-| EBS | 25GB gp3 (data) | ~$2.50 |
-| RDS | db.t4g.micro MariaDB | ~$12 |
-| Elastic IP | 1 IP | ~$3.60 |
-| CloudWatch | Alarmas básicas | ~$1 |
-| **Total** | | **~$44.60/mes** |
+## Skills
 
-### Configuración Mejorada (t4g.large)
+Each skill is a folder with a `SKILL.md`. Copy them to `~/.claude/skills/` (all projects) or `.claude/skills/` (one project).
 
-| Servicio | Especificación | Costo/mes |
-|----------|----------------|-----------|
-| EC2 | t4g.large (8GB) | ~$48 |
-| EBS | 15GB gp3 (root) | ~$1.50 |
-| EBS | 50GB gp3 (data) | ~$5 |
-| RDS | db.t4g.small MariaDB | ~$24 |
-| Elastic IP | 1 IP | ~$3.60 |
-| CloudWatch | Alarmas básicas | ~$1 |
-| **Total** | | **~$83.10/mes** |
+| Skill | Purpose |
+|-------|---------|
+| [moodle-deployment](skills/moodle-deployment/SKILL.md) | Orchestrates the whole deployment |
+| [provision-infrastructure](skills/provision-infrastructure/SKILL.md) | AWS resources with Terraform |
+| [setup-moodle-server](skills/setup-moodle-server/SKILL.md) | LAMP stack on Amazon Linux 2023 |
+| [install-moodle](skills/install-moodle/SKILL.md) | Moodle install, cron, SMTP |
+| [configure-ssl](skills/configure-ssl/SKILL.md) | HTTPS and security headers |
+| [optimize-system](skills/optimize-system/SKILL.md) | PHP-FPM, Apache and OS tuning |
+| [setup-backups](skills/setup-backups/SKILL.md) | Automated 3-2-1 backups |
+| [setup-monitoring](skills/setup-monitoring/SKILL.md) | CloudWatch metrics and alarms |
+| [setup-certificates](skills/setup-certificates/SKILL.md) | Automatic certificates with QR verification |
+| [scale-infrastructure](skills/scale-infrastructure/SKILL.md) | Diagnosis and vertical scaling |
+| [troubleshoot-moodle](skills/troubleshoot-moodle/SKILL.md) | Diagnosis of common problems |
 
-*Precios aproximados para us-east-1 (2026)*
+Technical guides: [docs/01 to docs/11](docs/) (architecture, prerequisites, EC2, installation, optimization, SSL, backups, monitoring, maintenance, certificates, scaling).
 
-### Free tier / créditos AWS
+## Estimated Costs
 
-El antiguo "free tier de 12 meses" ya no aplica a cuentas nuevas. Desde el 15-jul-2025 se elige **Free plan** (hasta 6 meses o hasta agotar créditos, solo un subconjunto de servicios) o **Paid plan** (todos los servicios, pago por uso al agotar créditos). Los créditos son USD 100 al registrarse + hasta USD 100 por actividades (máx. USD 200) y vencen 12 meses después de crear la cuenta. Un Moodle con EC2 + RDS consume créditos rápidamente: configura AWS Budgets (variable `monthly_budget_usd`). Detalles en [docs/11-scaling.md](docs/11-scaling.md) y [docs/02-prerequisites.md](docs/02-prerequisites.md).
+Approximate monthly figures for us-east-1, 2026. Check the AWS pricing pages before budgeting.
 
-## 🛡️ Seguridad
+| Setup | EC2 | RDS | Storage + IP + alarms | Total |
+|-------|-----|-----|-----------------------|-------|
+| Basic | t4g.medium ~$24 | db.t4g.micro ~$12 | ~$8.60 | **~$45** |
+| Improved | t4g.large ~$48 | db.t4g.small ~$24 | ~$11 | **~$83** |
 
-- Security Groups restrictivos (solo puertos necesarios)
-- SSH solo desde IPs específicas (configurable)
-- SSL/TLS automático con Let's Encrypt
-- Secrets Manager para credenciales (opcional)
-- Actualizaciones automáticas de seguridad
-- Firewall configurado (firewalld)
+**Free tier changed.** Since 15 July 2025, new accounts choose a Free plan (up to 6 months or until credits run out, only some services) or a Paid plan. Credits are USD 100 on sign-up plus up to USD 100 for completing activities, and they expire 12 months after account creation. EC2 plus RDS burns through them fast, so set up AWS Budgets (`monthly_budget_usd`). See [AWS Free Tier FAQs](https://aws.amazon.com/free/faqs/) and [docs/02-prerequisites.md](docs/02-prerequisites.md).
 
-## 📈 Monitoreo
+## Changelog
 
-### CloudWatch Dashboards
+There is no `CHANGELOG.md` yet, so the history lives here. See the [pull requests](https://github.com/ocastelblanco/moodle-development/pulls) for details.
 
-- Uso de CPU, memoria, disco
-- Latencia de base de datos
-- Tráfico de red
-- Errores de aplicación
+* **v2.0.0 (2026-11-25):**
+  * Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8.
+  * Fixed the wrong `MOODLE_51_STABLE` branch.
+  * Automatic certificates skill.
+  * Scaling skill with manual and automatic modes.
+  * SES SMTP credentials via Terraform.
+* **v1.1.0 (2026-02-11):** Moodle 5.1, `/public` directory structure and Routing Engine.
+* **v1.0.0 (2026-02-02):** initial skills, Terraform and deployment scripts.
 
-### Alarmas Configuradas
+## Frequently Asked Questions (FAQ)
 
-- CPU > 80% por 5 minutos
-- Memoria disponible < 500 MB
-- Disco > 80% utilizado
-- RDS CPU > 80%
-- Status check failed
+1. **Why not Ubuntu 26.04?**
+   - It ships PHP 8.5, which Moodle 5.3 does not support. Amazon Linux 2023 lets you pin PHP 8.4.
+2. **Why not keep MariaDB 10.11?**
+   - Moodle 5.3 raised the minimum to MariaDB 11.4.0, so 10.11 no longer installs.
+3. **Is `tool_certificate` compatible with Moodle 5.3?**
+   - At the time of writing the plugins directory lists it up to 5.2, while `mod_coursecertificate` covers 5.3. The certificates skill makes you check this before installing and describes a plan B (`mod_customcert`).
+4. **What happens to Terraform after an automatic resize?**
+   - Update `instance_type`, `db_instance_class` or `data_volume_size` in `terraform.tfvars` before the next `terraform apply`. Otherwise Terraform tries to revert the change.
+5. **Is it tested on a real AWS account?**
+   - Not yet. Scripts and Terraform pass syntax checks (`bash -n`, `shellcheck`, `terraform validate`). Run `terraform plan` in a test account first.
+6. **Does it scale horizontally?**
+   - No. It is a single-server design with vertical scaling. Auto Scaling with a load balancer, EFS and Valkey is planned for a later phase.
 
-### Logs
+## Contributing
 
-- `/var/log/httpd/` - Logs de Apache
-- `/var/log/php-fpm/` - Logs de PHP-FPM
-- `/var/log/moodle/` - Logs de Moodle
-- `/var/log/memory-monitor.log` - Monitoreo de memoria
+1. Never commit to `main`. Create a branch such as `feature/short-kebab-description`.
+2. Run `bash -n` and `shellcheck` on any script you touch, and `terraform fmt` plus `terraform validate` on Terraform changes.
+3. Commit specific files (no `git add .`), with messages in Spanish: `type(scope): description`.
+4. Open a pull request against `main`. Nobody merges their own pull request.
 
-## 🔄 Backups
+Code and comments are in English. Documentation is in Spanish, and the READMEs are bilingual. AWS resources are named `{project}-{service}-{purpose}`.
 
-### Automáticos
+**Working on your first pull request?** See guide: [How to Contribute to an Open Source Project on GitHub](https://kcd.im/pull-request)
 
-- **Snapshots EBS**: Diarios a las 2 AM UTC, retención 7 días
-- **Dump base de datos**: Diarios a las 3 AM UTC, retención 7 días
-- **Moodledata**: Semanal, sincronizado a S3
-- **RDS**: Automated backups, retención 7 días
+## License
 
-### Manuales
+This repository does not include a license file yet. Until the owner adds one, all rights are reserved by default. Open an issue if you want to reuse the code.
 
-```bash
-# Snapshot inmediato
-./scripts/utilities/backup-now.sh
+## Support
 
-# Restaurar desde backup
-./scripts/utilities/backup-restore.sh <snapshot-id>
-```
+Maintainer: [@ocastelblanco](https://github.com/ocastelblanco). Open an [issue](https://github.com/ocastelblanco/moodle-development/issues) for questions or bugs.
 
-## 🔧 Mantenimiento
-
-### Actualizaciones de Moodle
-
-Sistema automático configurado:
-
-```bash
-# Verificar actualizaciones disponibles
-sudo -u apache /usr/bin/php /var/www/html/moodle/admin/cli/check_database_schema.php
-
-# Aplicar actualizaciones (manual)
-cd /var/www/html/moodle
-sudo -u apache git pull
-sudo -u apache /usr/bin/php admin/cli/upgrade.php --non-interactive
-```
-
-**Nota sobre estructura de directorios:** Los comandos CLI permanecen en `/var/www/html/moodle/admin/cli/` (por encima del directorio `/public`). Solo el DocumentRoot del servidor web cambia a apuntar a `/var/www/html/moodle/public`.
-
-### Actualizaciones del Sistema
-
-```bash
-# Amazon Linux 2023 - actualizaciones automáticas configuradas
-sudo dnf update -y
-
-# Verificar servicios después de actualizar
-./scripts/utilities/health-check.sh
-```
-
-## 🤖 AI Agent Skills
-
-Este proyecto incluye **11 skills profesionales** diseñados específicamente para agentes de inteligencia artificial como Claude Code, ChatGPT y otros asistentes con capacidades de ejecución de código.
-
-### ¿Qué son los Skills?
-
-Los skills son conjuntos estructurados de instrucciones que guían a los agentes de IA a través de tareas técnicas complejas. Cada skill incluye:
-
-- **Contexto completo**: Qué hace el skill y cuándo usarlo
-- **Prerequisites**: Condiciones requeridas antes de ejecutar
-- **Instrucciones paso a paso**: Implementación detallada
-- **Scripts de automatización**: Enlaces a scripts para ejecución rápida
-- **Troubleshooting**: Soluciones a problemas comunes
-- **Ejemplos reales**: Casos de uso del mundo real
-
-### Skills Disponibles
-
-1. **moodle-deployment** - Orquestadora: coordina las fases del despliegue completo
-2. **provision-infrastructure** - Provisión de infraestructura AWS con Terraform
-3. **setup-moodle-server** - Instalación y configuración del stack LAMP
-4. **install-moodle** - Deployment de Moodle 5.3 LTS desde fuentes oficiales
-5. **configure-ssl** - Configuración SSL/HTTPS con Let's Encrypt
-6. **optimize-system** - Optimización de sistema basada en experiencia real (ACG)
-7. **setup-backups** - Sistema de backups automatizado con estrategia 3-2-1
-8. **setup-monitoring** - Monitoreo CloudWatch con alarmas y dashboards
-9. **troubleshoot-moodle** - Diagnóstico y resolución de problemas comunes
-10. **setup-certificates** - Certificados automáticos con verificación QR (mod_coursecertificate + SES)
-11. **scale-infrastructure** - Diagnóstico y escalado vertical (EC2/RDS/EBS), operación continua
-
-### Uso con Agentes de IA
-
-**Claude Code:**
-
-```bash
-claude "Deploy Moodle using skills in skills/"
-```
-
-**ChatGPT / Otros:**
-
-- Sube los archivos de [skills/](skills/) a la conversación
-- Solicita el deployment: "Deploy Moodle 5.3 LTS siguiendo los skills"
-
-### Ventajas del Deployment con IA
-
-- ⚡ **Autónomo**: El agente ejecuta todos los pasos sin intervención
-- 🔍 **Verificación automática**: Valida cada paso antes de continuar
-- 🛠️ **Auto-troubleshooting**: Detecta y resuelve errores automáticamente
-- 📊 **Reporting**: Informa progreso y resultados en tiempo real
-- ⏱️ **Eficiente**: Deployment completo en 45-60 minutos
-
-### Experiencia Real
-
-Los skills están basados en el **proyecto ACG Calidad** (Moodle 4.1 → 5.x), incluyendo:
-- Optimización de PHP-FPM que resolvió problemas de OOM
-- Configuración de SWAP para estabilidad en t4g.medium
-- Monitoreo de memoria que previene caídas del servicio
-- Estrategias de backup probadas en producción
-
-**Documentación completa**: [skills/moodle-deployment/SKILL.md](skills/moodle-deployment/SKILL.md)
-
-## 🆕 Novedades de Moodle 5.x (estructura /public y 5.3 LTS)
-
-### Cambios en la Estructura de Directorios
-
-**DocumentRoot movido a /public:**
-- **Anterior (≤4.x):** DocumentRoot apuntaba a `/var/www/html/moodle`
-- **Nuevo (desde 5.1, vigente en 5.3 LTS):** DocumentRoot debe apuntar a `/var/www/html/moodle/public`
-- **Razón:** Mejora de seguridad, todos los archivos web-accesibles ahora están dentro de `/public`
-
-### Routing Engine
-
-Moodle 5.1 introdujo un nuevo motor de enrutamiento que:
-- Maneja el procesamiento de solicitudes de forma más eficiente
-- Permite URLs más limpias
-- Mejora el rendimiento general
-- **Recomendación:** Activado por defecto (fuertemente recomendado)
-
-### Requisitos Técnicos Actualizados
-
-| Componente | Requisito Mínimo | Versiones Soportadas |
-|------------|------------------|----------------------|
-| **PHP** | 8.3.0 (solo 64-bit) | 8.3.x, 8.4.x (✅ proyecto usa 8.4; 8.5 NO soportado) |
-| **PostgreSQL** | 15.0 | 15+ |
-| **MySQL** | 8.4.0 | 8.4+ |
-| **MariaDB** | 11.4.0 | 11.4+ (✅ proyecto usa RDS MariaDB 11.8) |
-
-### Extensiones PHP Requeridas
-
-Todas las extensiones anteriores más:
-- **sodium** (✅ ya incluida en el proyecto)
-- **max_input_vars >= 5000** (✅ ya configurado)
-
-### Migración desde Moodle 4.x
-
-**Path mínimo de actualización:** Moodle 4.4 o posterior
-
-**Pasos adicionales para 5.3:**
-1. Actualizar código de Moodle
-2. **Reconfigurar Apache:** Cambiar DocumentRoot a `/var/www/html/moodle/public`
-3. Ejecutar upgrade CLI
-4. **Migrar plugins:** Mover plugins a nueva estructura (si es necesario)
-5. Verificar funcionamiento del Routing Engine
-
-**Importante:**
-- `/moodledata` permanece sin cambios en `/moodledata`
-- Scripts CLI permanecen en `/var/www/html/moodle/admin/cli/`
-- `config.php` permanece en `/var/www/html/moodle/config.php`
-- Solo cambia el punto de entrada web (DocumentRoot → `/public`)
-
-### Nuevas Características
-
-- **Controles de acceso AI:** Gestión mejorada de acceso de usuarios a características de IA
-- **Activity Chooser:** Mejoras en la interfaz de selección de actividades
-- **Resumen centralizado de cursos:** Vista unificada de progreso en cursos
-- **TinyMCE mejorado:** Editor de texto enriquecido con nuevas características
-- **Report Builder:** Mejoras en la generación de informes personalizados
-- **Módulo de Tareas:** Mejoras en la gestión de asignaciones
-- **CAPTCHA:** Protección en forgot_password.php
-- **Formato de curso social:** Deshabilitado por defecto
-
-## 📞 Soporte y Contribuciones
-
-Este conjunto de herramientas está diseñado para ser modular y extensible. Puedes:
-
-- Modificar variables para ajustar a tu caso de uso
-- Agregar scripts adicionales en `scripts/utilities/`
-- Extender la configuración de Terraform
-- Mejorar las optimizaciones
-- Crear nuevos skills para casos de uso específicos
-
-## 📚 Referencias
-
-- [Moodle 5.3 Documentation](https://docs.moodle.org/503/en/)
-- [AWS Best Practices](https://aws.amazon.com/architecture/well-architected/)
-- [PHP-FPM Optimization](https://www.php.net/manual/en/install.fpm.php)
-- [Let's Encrypt](https://letsencrypt.org/docs/)
-
-## 📝 Changelog
-
-### v2.0.0 (2026-11-25)
-
-- **Moodle 5.3 LTS:** Rama `MOODLE_503_STABLE` (el valor anterior `MOODLE_51_STABLE` era incorrecto)
-- **PHP 8.4:** Paquetes `php8.4-*` de Amazon Linux 2023 (mínimo Moodle 5.3: 8.3)
-- **RDS MariaDB 11.8:** Moodle 5.3 requiere MariaDB >= 11.4; cliente `mariadb1011-client-utils`
-- **Certificados:** Nuevo skill `setup-certificates`, script `08-setup-certificates.sh` y doc `10-certificates.md`
-- **Matriz de versiones y soporte** y justificación de no usar Ubuntu 26.04
-
-### v1.1.0 (2026-02-11)
-
-- **Moodle 5.1 /public:** Actualización de documentación para reflejar la nueva estructura de directorios
-- **Routing Engine:** Documentación del nuevo motor de enrutamiento de Moodle 5.1
-- **PHP 8.2+:** Requisitos actualizados (PHP 8.2.0 mínimo, soporte 8.2.x, 8.3.x, 8.4.x)
-- **DocumentRoot:** Apache debe apuntar a `/var/www/html/moodle/public`
-- **Migración de plugins:** Notas sobre relocación de plugins después de actualizar a 5.1
-- **Requisitos de base de datos:** PostgreSQL 15+, MySQL 8.4+, MariaDB 10.11+
-
-### v1.0.0 (2026-02-02)
-
-- Estructura inicial de skills
-- Terraform para infraestructura completa
-- Scripts de deployment automatizado
-- Optimización PHP-FPM basada en memoria
-- SSL automático con Let's Encrypt
-- Sistema de backups automatizado
-- Monitoreo CloudWatch
-- Documentación completa
-
----
-
-**Desarrollado por:** Oliver Castelblanco (@ocastelblanco)
-**Basado en:** Proyecto ACG Calidad - Actualización Moodle 4.1 → 5.x
-**Fecha:** Noviembre 2026
-**Versión:** 2.0.0
+Based on the ACG Calidad project (Moodle 4.1 to 5.x upgrade).
