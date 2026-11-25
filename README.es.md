@@ -181,5 +181,3 @@ Distribuido bajo la [Licencia Apache 2.0](LICENSE).
 ## Soporte
 
 Responsable: [@ocastelblanco](https://github.com/ocastelblanco). Abre una [incidencia](https://github.com/ocastelblanco/moodle-development/issues) para dudas o errores.
-
-Basado en el proyecto ACG Calidad (actualización de Moodle 4.1 a 5.x).
