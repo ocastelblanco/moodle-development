@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 Backup Configuration Script
+# Moodle 5.3 LTS Backup Configuration Script
 # Version: 1.0.0
 # Date: 2026-02-02
 # Description: Configures automated backups for Moodle
@@ -78,7 +78,7 @@ BACKUP_FILE="$BACKUP_DIR/moodle-db-$TIMESTAMP.sql.gz"
 echo "=== Moodle Database Backup: $(date) ===" >> /var/log/moodle-backup.log
 
 # Create backup
-mysqldump -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" \
+mariadb-dump -h "${DB_HOST}" -u "${DB_USER}" -p"${DB_PASSWORD}" \
     "${DB_NAME}" \
     --single-transaction \
     --quick \
@@ -113,7 +113,10 @@ BACKUP_FILE="$BACKUP_DIR/moodledata-$TIMESTAMP.tar.gz"
 
 echo "=== Moodledata Backup: $(date) ===" >> /var/log/moodle-backup.log
 
-# Create backup (exclude cache and temp)
+# Create backup (exclude cache and temp).
+# NOTE: /moodledata/filedir is included on purpose: it holds all user files,
+# including issued certificate PDFs and certificate template images.
+
 tar -czf "$BACKUP_FILE" \
     --exclude='/moodledata/cache/*' \
     --exclude='/moodledata/localcache/*' \
@@ -258,7 +261,7 @@ echo "======================================================================"
 echo "To restore:"
 echo ""
 echo "Database:"
-echo "  gunzip < /path/to/backup.sql.gz | mysql -h HOST -u USER -pPASS DATABASE"
+echo "  gunzip < /path/to/backup.sql.gz | mariadb -h HOST -u USER -pPASS DATABASE"
 echo ""
 echo "Moodledata:"
 echo "  tar -xzf /path/to/moodledata-backup.tar.gz -C /"

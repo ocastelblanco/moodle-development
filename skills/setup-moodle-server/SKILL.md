@@ -1,6 +1,6 @@
 ---
 name: setup-moodle-server
-description: Installs and configures complete LAMP stack (Apache 2.4 + PHP 8.4 + MariaDB client) on Amazon Linux 2023 for Moodle 5.1. Use when infrastructure is provisioned and EC2 instance is ready, or when the user needs to configure a fresh server, install PHP extensions, or configure firewall and SELinux. Triggers: "setup server", "install LAMP", "configure Apache PHP", "prepare server for Moodle", "install PHP extensions", "configure firewall", "configure SELinux".
+description: Installs and configures complete LAMP stack (Apache 2.4 + PHP 8.4 + MariaDB client) on Amazon Linux 2023 for Moodle 5.3 LTS. Use when infrastructure is provisioned and EC2 instance is ready, or when the user needs to configure a fresh server, install PHP extensions, or configure firewall and SELinux. Triggers: "setup server", "install LAMP", "configure Apache PHP", "prepare server for Moodle", "install PHP extensions", "configure firewall", "configure SELinux".
 ---
 
 # Setup Moodle Server
@@ -52,18 +52,20 @@ The script automates all steps described below.
 4. **Install PHP 8.4 with extensions:**
    ```bash
    sudo dnf install -y \
-       php php-fpm php-cli php-common \
-       php-mysqlnd php-gd php-xml php-mbstring \
-       php-intl php-zip php-soap php-json \
-       php-curl php-opcache php-xmlrpc php-sodium
+       php8.4 php8.4-fpm php8.4-cli php8.4-common \
+       php8.4-mysqlnd php8.4-gd php8.4-xml php8.4-mbstring \
+       php8.4-intl php8.4-zip php8.4-soap php8.4-opcache \
+       php8.4-sodium php8.4-process php8.4-pdo
 
    sudo systemctl enable php-fpm
    sudo systemctl start php-fpm
    ```
 
+   Note: AL2023 uses versioned `php8.4-*` packages. `php-xmlrpc` and `php-json` do not exist (json is in core). Moodle 5.3 requires PHP >= 8.3 (64-bit), supports 8.4, and does NOT support 8.5 (do not use Ubuntu 26.04, which ships PHP 8.5).
+
 5. **Install MariaDB client:**
    ```bash
-   sudo dnf install -y mariadb105
+   sudo dnf install -y mariadb1011-client-utils
    ```
 
 6. **Install additional tools:**
@@ -92,7 +94,7 @@ The script automates all steps described below.
    sudo chmod -R 770 /moodledata
    ```
 
-   **Nota Moodle 5.1:** Al clonar Moodle, el directorio `/public` se crea automaticamente. Apache DocumentRoot debe apuntar a `/var/www/html/moodle/public`.
+   **Nota Moodle 5.3 (estructura /public desde 5.1):** Al clonar Moodle, el directorio `/public` se crea automaticamente. Apache DocumentRoot debe apuntar a `/var/www/html/moodle/public`.
 
 9. **Configure SELinux:**
    ```bash
@@ -162,7 +164,7 @@ The script includes:
 - **OS:** Amazon Linux 2023
 - **Apache:** 2.4.65+
 - **PHP:** 8.4.x
-- **MariaDB Client:** 10.11.15+
+- **MariaDB Client:** `mariadb1011-client-utils` (compatible with the RDS MariaDB 11.8 server)
 
 ### Post-setup
 
@@ -209,7 +211,7 @@ Database connection successful
 
 **User:** "My infrastructure is ready, now I need to set up the server for Moodle"
 
-**Assistant:** I'll set up the complete LAMP stack on your server for Moodle 5.1.
+**Assistant:** I'll set up the complete LAMP stack on your server for Moodle 5.3 LTS.
 
 First, let me connect to your server...
 

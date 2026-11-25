@@ -1,13 +1,13 @@
 ---
 name: moodle-deployment
-description: Complete guide for deploying and managing Moodle 5.1 on AWS. Provides an overview of all available skills and recommended deployment workflow. Use when planning a full deployment, wanting to understand available capabilities, or needing cost estimates and architecture overview. Triggers: "deploy Moodle", "full deployment", "production Moodle", "Moodle on AWS guide", "deployment workflow", "Moodle architecture", "cost estimate".
+description: Complete guide for deploying and managing Moodle 5.3 LTS on AWS. Provides an overview of all available skills and recommended deployment workflow. Use when planning a full deployment, wanting to understand available capabilities, or needing cost estimates and architecture overview. Triggers: "deploy Moodle", "full deployment", "production Moodle", "Moodle on AWS guide", "deployment workflow", "Moodle architecture", "cost estimate".
 ---
 
-# Moodle 5.1 AWS Deployment Guide
+# Moodle 5.3 LTS AWS Deployment Guide
 
 ## Available Skills
 
-This project includes 8 specialized skills for Moodle deployment and management:
+This project includes 10 specialized skills for Moodle deployment and management:
 
 ### Infrastructure & Setup
 
@@ -15,7 +15,7 @@ This project includes 8 specialized skills for Moodle deployment and management:
 |-------|---------|-------------|
 | [Provision Infrastructure](../provision-infrastructure/SKILL.md) | `/provision-infrastructure` | Creates AWS infrastructure (EC2, RDS, EBS, Security Groups) |
 | [Setup Server](../setup-moodle-server/SKILL.md) | `/setup-moodle-server` | Installs LAMP stack (Apache, PHP 8.4, MariaDB client) |
-| [Install Moodle](../install-moodle/SKILL.md) | `/install-moodle` | Downloads and configures Moodle 5.1 |
+| [Install Moodle](../install-moodle/SKILL.md) | `/install-moodle` | Downloads and configures Moodle 5.3 LTS |
 | [Configure SSL](../configure-ssl/SKILL.md) | `/configure-ssl` | Sets up HTTPS with Let's Encrypt |
 
 ### Operations & Maintenance
@@ -25,7 +25,9 @@ This project includes 8 specialized skills for Moodle deployment and management:
 | [Optimize System](../optimize-system/SKILL.md) | `/optimize-system` | Tunes PHP-FPM and system for performance |
 | [Setup Backups](../setup-backups/SKILL.md) | `/setup-backups` | Configures automated 3-2-1 backup strategy |
 | [Setup Monitoring](../setup-monitoring/SKILL.md) | `/setup-monitoring` | Configures CloudWatch metrics and alarms |
+| [Setup Certificates](../setup-certificates/SKILL.md) | `/setup-certificates` | Automatic course certificates with QR verification, emailed via SES SMTP |
 | [Troubleshoot](../troubleshoot-moodle/SKILL.md) | `/troubleshoot-moodle` | Diagnoses and resolves common issues |
+| [Scale Infrastructure](../scale-infrastructure/SKILL.md) | `/scale-infrastructure` | Ongoing operation (not a deployment phase): diagnoses load and scales EC2/RDS/EBS vertically; manual CLI or Terraform automation |
 
 ## Deployment Workflows
 
@@ -36,16 +38,17 @@ For a complete production deployment with SSL, backups, and monitoring:
 ```
 1. /provision-infrastructure  --> AWS resources created
 2. /setup-moodle-server       --> LAMP stack configured
-3. /install-moodle            --> Moodle 5.1 installed
+3. /install-moodle            --> Moodle 5.3 LTS installed
 4. /configure-ssl             --> HTTPS enabled
 5. /optimize-system           --> Performance tuned
 6. /setup-backups             --> Automated backups
 7. /setup-monitoring          --> CloudWatch alarms
+8. /setup-certificates        --> Automatic certificates (requires SES SMTP configured)
 ```
 
 **Prompt example:**
 ```
-Deploy production Moodle 5.1 on AWS with SSL, backups, and monitoring.
+Deploy production Moodle 5.3 LTS on AWS with SSL, backups, monitoring, and automatic certificates.
 Domain: moodle.example.com
 Instance: t4g.medium
 ```
@@ -62,7 +65,7 @@ For a development or testing environment:
 
 **Prompt example:**
 ```
-Deploy development Moodle 5.1 on AWS t4g.small instance.
+Deploy development Moodle 5.3 LTS on AWS t4g.small instance.
 ```
 
 ### Troubleshooting Workflow
@@ -83,7 +86,7 @@ My Moodle site is showing 503 errors. Please diagnose and fix.
 
 ## Architecture Overview
 
-**Nota Moodle 5.1:** El DocumentRoot de Apache debe apuntar a `/var/www/html/moodle/public` en lugar de `/var/www/html/moodle`. Moodle 5.1 introduce un nuevo motor de enrutamiento (Routing Engine) que procesa todas las solicitudes a traves del directorio `/public`.
+**Nota Moodle 5.3 (estructura /public desde 5.1):** El DocumentRoot de Apache debe apuntar a `/var/www/html/moodle/public` en lugar de `/var/www/html/moodle`. Moodle 5.1 introdujo un nuevo motor de enrutamiento (Routing Engine) que procesa todas las solicitudes a traves del directorio `/public`.
 
 ```
 +-------------------------------------------------------+
@@ -156,7 +159,7 @@ My Moodle site is showing 503 errors. Please diagnose and fix.
 - Domain name (for SSL)
 - Email address (for SSL and alerts)
 
-## Notas Especificas de Moodle 5.1
+## Notas Especificas de Moodle 5.3 LTS
 
 ### Cambios en la estructura de directorios
 
@@ -168,19 +171,30 @@ My Moodle site is showing 503 errors. Please diagnose and fix.
 
 ### Requisitos de PHP
 
-- **Minimo:** PHP 8.2.0 (anteriormente 8.1)
-- **Recomendado:** PHP 8.4.x
+- **Minimo:** PHP 8.3.0 (solo 64-bit)
+- **Recomendado:** PHP 8.4.x (PHP 8.5 NO soportado por Moodle 5.3)
+
+### Matriz de versiones y soporte
+
+| Componente | Version | Soporte |
+|------------|---------|---------|
+| Moodle | 5.3 LTS (`MOODLE_503_STABLE`) | General ~oct 2027, seguridad ~oct 2029 |
+| PHP | 8.4 (`php8.4-*` en AL2023) | Seguridad hasta 31-dic-2028 |
+| MariaDB | RDS MariaDB 11.8 (LTS) | Moodle 5.3 requiere >= 11.4 (10.11 ya no sirve) |
+| SO | Amazon Linux 2023 ARM64 | Hasta 30-jun-2029 |
+
+No se usa Ubuntu 26.04 porque distribuye PHP 8.5, no soportado por Moodle 5.3.
 
 ### Routing Engine
 
-Moodle 5.1 introduce un nuevo motor de enrutamiento que procesa todas las solicitudes HTTP a traves del directorio `/public`. Esto mejora la seguridad al separar los archivos publicos del codigo fuente.
+Moodle 5.1 introdujo un nuevo motor de enrutamiento que procesa todas las solicitudes HTTP a traves del directorio `/public`. Esto mejora la seguridad al separar los archivos publicos del codigo fuente.
 
 ### Migracion de plugins (upgrades)
 
-Al actualizar desde versiones anteriores a Moodle 5.1:
+Al actualizar desde versiones anteriores (ruta minima: desde Moodle 4.4):
 
 1. Actualizar Apache DocumentRoot a `/var/www/html/moodle/public`
-2. Verificar que PHP cumple con el minimo 8.2.0
+2. Verificar que PHP cumple con el minimo 8.3.0
 3. Verificar compatibilidad de plugins con el nuevo Routing Engine
 4. Probar que todas las URLs responden correctamente despues del cambio
 

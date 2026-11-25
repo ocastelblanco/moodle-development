@@ -1,4 +1,4 @@
-# Monitoreo y Observabilidad para Moodle 5.1
+# Monitoreo y Observabilidad para Moodle 5.3 LTS
 
 Guía completa de monitoreo con CloudWatch, alertas y troubleshooting.
 
@@ -108,7 +108,11 @@ El script crea `/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.jso
     }
   },
   "metrics": {
-    "namespace": "Moodle/EC2",
+    "namespace": "CWAgent",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "aggregation_dimensions": [["InstanceId", "path"]],
     "metrics_collected": {
       "cpu": {
         "measurement": [
@@ -116,20 +120,46 @@ El script crea `/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.jso
             "name": "cpu_usage_idle",
             "rename": "CPU_IDLE",
             "unit": "Percent"
+          },
+          {
+            "name": "cpu_usage_iowait",
+            "rename": "CPU_IOWAIT",
+            "unit": "Percent"
           }
         ],
-        "metrics_collection_interval": 60
+        "metrics_collection_interval": 60,
+        "totalcpu": false
       },
       "disk": {
         "measurement": [
           {
             "name": "used_percent",
-            "rename": "DISK_USED",
             "unit": "Percent"
+          },
+          {
+            "name": "inodes_free",
+            "rename": "DISK_INODES_FREE",
+            "unit": "Count"
           }
         ],
         "metrics_collection_interval": 60,
-        "resources": ["*"]
+        "resources": [
+          "/",
+          "/moodledata"
+        ],
+        "drop_device": true
+      },
+      "diskio": {
+        "measurement": [
+          {
+            "name": "io_time",
+            "unit": "Milliseconds"
+          }
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "*"
+        ]
       },
       "mem": {
         "measurement": [
@@ -161,6 +191,11 @@ El script crea `/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.jso
           {
             "name": "tcp_established",
             "rename": "TCP_ESTABLISHED",
+            "unit": "Count"
+          },
+          {
+            "name": "tcp_time_wait",
+            "rename": "TCP_TIME_WAIT",
             "unit": "Count"
           }
         ],
@@ -205,12 +240,12 @@ sudo systemctl enable amazon-cloudwatch-agent
 
 | Métrica | Namespace | Threshold |
 |---------|-----------|-----------|
-| CPU_IDLE | Moodle/EC2 | > 20% |
-| MEMORY_USED | Moodle/EC2 | < 80% |
-| MEMORY_AVAILABLE | Moodle/EC2 | > 500 MB |
-| DISK_USED | Moodle/EC2 | < 80% |
-| SWAP_USED | Moodle/EC2 | < 50% |
-| TCP_ESTABLISHED | Moodle/EC2 | < 1000 |
+| CPU_IDLE | CWAgent | > 20% |
+| MEMORY_USED | CWAgent | < 80% |
+| MEMORY_AVAILABLE | CWAgent | > 500 MB |
+| disk_used_percent (dimensiones `InstanceId`+`path`: `/` y `/moodledata`) | CWAgent | < 80% |
+| SWAP_USED | CWAgent | < 50% |
+| TCP_ESTABLISHED | CWAgent | < 1000 |
 
 ### RDS Metrics
 
@@ -228,6 +263,21 @@ sudo systemctl enable amazon-cloudwatch-agent
 ### Configuración via Terraform
 
 Ya incluidas en `terraform/cloudwatch.tf` si `enable_cloudwatch_alarms = true`
+
+### Monitoreo de certificados y cron
+
+La emisión y el envío por correo de certificados (`mod_coursecertificate`) dependen de que el cron de Moodle corra cada minuto y de la tarea programada `\mod_coursecertificate\task\issue_certificates_task`. El health check (`/usr/local/bin/moodle-health-check.sh`) consulta `mdl_task_scheduled` y avisa si la tarea está deshabilitada, tiene `faildelay > 0` o no corrió en los últimos 15 minutos.
+
+Ideas de alarma (métrica personalizada vía `put-metric-data`, namespace `Moodle/App`):
+
+| Alarma | Condición | Acción |
+|--------|-----------|--------|
+| CertificateTaskStale | `now - lastruntime` de `issue_certificates_task` > 15 min | Email alert |
+| CertificateTaskFailing | `faildelay > 0` o `disabled = 1` | Email alert |
+| CronNotRunning | Sin ejecución de cron > 10 min | Email alert |
+| SES Bounce/Complaint Rate | `Reputation.BounceRate` > 5% o `Reputation.ComplaintRate` > 0.1% (métricas de SES) | Email alert |
+
+**Rebotes de SES:** los certificados se envían por correo vía Amazon SES SMTP. Monitorear la tasa de rebotes y quejas en SES (CloudWatch namespace `AWS/SES`) y mantener la cuenta fuera del sandbox; un rebote alto puede suspender el envío y los certificados dejarían de llegar aunque la tarea se ejecute bien.
 
 ### Crear Alarma Manual
 
@@ -250,7 +300,7 @@ aws cloudwatch put-metric-alarm \
 aws cloudwatch put-metric-alarm \
     --alarm-name moodle-low-memory \
     --alarm-description "Available memory below 500MB" \
-    --namespace Moodle/EC2 \
+    --namespace CWAgent \
     --metric-name MEMORY_AVAILABLE \
     --dimensions Name=InstanceId,Value=i-xxxxx \
     --statistic Average \
@@ -264,8 +314,8 @@ aws cloudwatch put-metric-alarm \
 aws cloudwatch put-metric-alarm \
     --alarm-name moodle-high-disk \
     --alarm-description "Disk usage exceeds 80%" \
-    --namespace Moodle/EC2 \
-    --metric-name DISK_USED \
+    --namespace CWAgent \
+    --metric-name disk_used_percent \
     --dimensions Name=InstanceId,Value=i-xxxxx,Name=path,Value=/ \
     --statistic Average \
     --period 300 \
@@ -369,7 +419,7 @@ aws cloudwatch put-dashboard \
       "properties": {
         "metrics": [
           ["AWS/EC2", "CPUUtilization", {"stat": "Average"}],
-          ["Moodle/EC2", "MEMORY_USED", {"stat": "Average"}]
+          ["CWAgent", "MEMORY_USED", {"stat": "Average"}]
         ],
         "period": 300,
         "stat": "Average",
@@ -551,19 +601,19 @@ sudo vim /usr/local/bin/moodle-app-metrics.sh
 # Moodle application metrics
 
 # Active users (last 5 minutes)
-ACTIVE_USERS=$(mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -N -e "
+ACTIVE_USERS=$(mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -N -e "
     SELECT COUNT(DISTINCT userid)
     FROM mdl_logstore_standard_log
     WHERE timecreated > UNIX_TIMESTAMP() - 300
 ")
 
 # Total courses
-TOTAL_COURSES=$(mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -N -e "
+TOTAL_COURSES=$(mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -N -e "
     SELECT COUNT(*) FROM mdl_course WHERE visible=1
 ")
 
 # Active sessions
-ACTIVE_SESSIONS=$(mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -N -e "
+ACTIVE_SESSIONS=$(mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -N -e "
     SELECT COUNT(*) FROM mdl_sessions
     WHERE timemodified > UNIX_TIMESTAMP() - 300
 ")

@@ -44,13 +44,13 @@ The script fully automates backup configuration.
 
 **1. Database backups:**
 - Frequency: Daily at 2:00 AM
-- Method: mysqldump with compression
+- Method: mariadb-dump (package `mariadb1011-client-utils`) with compression, against RDS MariaDB 11.8
 - Retention: 7 daily, 4 weekly, 12 monthly
 - Storage: Local + S3
 
 **2. Moodledata backups:**
 - Frequency: Weekly (Sunday 3:00 AM)
-- Method: tar with gzip compression
+- Method: tar with gzip compression. MUST include `/moodledata/filedir` (issued certificate PDFs and template images live there); exclude only cache, localcache, temp, sessions
 - Retention: 4 weekly, 6 monthly
 - Storage: Local + S3
 
@@ -113,12 +113,12 @@ aws s3 ls s3://your-bucket/database/
 
 # Restore from local
 gunzip < /backups/database/moodle-db-YYYYMMDD-HHMMSS.sql.gz | \
-    mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME
+    mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME
 
 # Or restore from S3
 aws s3 cp s3://your-bucket/database/moodle-db-YYYYMMDD-HHMMSS.sql.gz - | \
     gunzip | \
-    mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME
+    mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME
 ```
 
 **Restore moodledata:**

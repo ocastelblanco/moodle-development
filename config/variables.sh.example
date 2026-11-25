@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 AWS Deployment - Configuration Variables
+# Moodle 5.3 LTS AWS Deployment - Configuration Variables
 # Copy this file to variables.sh and customize for your environment
 #
 # cp variables.sh.example variables.sh
@@ -89,12 +89,12 @@ export ROUTE53_ZONE_ID=""             # Your Route 53 hosted zone ID
 # Moodle Configuration
 #############################################
 
-# NOTE: Moodle 5.1 requires Apache DocumentRoot to point to
+# NOTE: Moodle 5.3 LTS requires Apache DocumentRoot to point to
 # /var/www/html/moodle/public (not /var/www/html/moodle)
-# PHP 8.2+ is required (8.4.x recommended)
+# PHP 8.4 on Amazon Linux 2023 (min 8.3, 8.5 not supported)
 
 # Moodle version (branch name from git)
-export MOODLE_VERSION="MOODLE_51_STABLE"
+export MOODLE_VERSION="MOODLE_503_STABLE"
 
 # Moodle admin credentials
 export MOODLE_ADMIN_USER="admin"
@@ -155,7 +155,7 @@ export SNAPSHOT_SCHEDULE="cron(0 2 * * ? *)"  # Daily at 2 AM UTC
 #############################################
 
 # Common tags applied to all resources
-export TAG_PROJECT="Moodle 5.1"
+export TAG_PROJECT="Moodle 5.3 LTS"
 export TAG_MANAGED_BY="Terraform"
 export TAG_ENVIRONMENT="Production"
 export TAG_OWNER="your-name"
@@ -260,3 +260,22 @@ show_config() {
 # Export function so it's available when sourced
 export -f show_config 2>/dev/null || true
 export -f validate_config 2>/dev/null || true
+
+#############################################
+# Email (Amazon SES SMTP) - optional
+#############################################
+
+# Credentials are NEVER stored here: only the SSM Parameter Store names.
+export SMTP_HOST=""                  # e.g. email-smtp.us-east-1.amazonaws.com (empty = skip)
+export SMTP_USER_SSM_PARAM=""        # e.g. /moodle/smtp/user
+export SMTP_PASS_SSM_PARAM=""        # e.g. /moodle/smtp/password (SecureString)
+export NOREPLY_ADDRESS=""            # e.g. noreply@example.com
+
+#############################################
+# Certificates (mod_coursecertificate + tool_certificate)
+#############################################
+
+export CERT_MIN_GRADE_PERCENT="70"       # Minimum course grade (%) to issue a certificate
+export CERT_PUBLIC_VERIFICATION="true"   # Allow unauthenticated verification by code
+export CERT_PLUGIN_COURSECERT_VERSION="" # mod_coursecertificate version (empty = latest compatible)
+export CERT_PLUGIN_TOOLCERT_VERSION=""   # tool_certificate version (empty = latest compatible)

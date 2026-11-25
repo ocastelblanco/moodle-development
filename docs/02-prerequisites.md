@@ -1,4 +1,4 @@
-# Prerequisitos para Deployment de Moodle 5.1
+# Prerequisitos para Deployment de Moodle 5.3 LTS
 
 Lista completa de requisitos y preparación antes de ejecutar el deployment.
 
@@ -265,6 +265,17 @@ Para deployment básico (t4g.medium + db.t4g.micro):
 - Otros: ~$5/mes
 - **Total: ~$45/mes**
 
+### Free tier, créditos y presupuesto
+
+El "free tier de 12 meses" (750 horas/mes) ya no aplica a cuentas nuevas. Desde el 15-jul-2025 se elige **Free plan** o **Paid plan**:
+
+- **Créditos**: USD 100 al registrarse + hasta USD 100 por actividades (máx. USD 200); vencen 12 meses después de crear la cuenta.
+- **Free plan**: hasta 6 meses o hasta agotar créditos, solo un subconjunto de servicios; no cobra hasta hacer upgrade.
+- **Paid plan**: todos los servicios, pago por uso al agotar créditos; permite fijar un límite de gasto mensual desde USD 20. No se puede volver a Free. Unirse a AWS Organizations termina los créditos.
+- Sin verificar (confirmar en la consola o en https://aws.amazon.com/free/faqs/): tipos de instancia elegibles en Free plan y qué ocurre al cumplirse los 6 meses sin upgrade.
+
+Este stack (EC2 + RDS + EBS + Elastic IP) puede requerir el Paid plan. **Recomendado:** crear un **AWS Budget** mensual con alertas (Terraform lo crea con `monthly_budget_usd`; ver [11-scaling.md](11-scaling.md)), además de las alarmas de billing siguientes.
+
 ### Configurar Billing Alerts
 
 ```bash
@@ -310,6 +321,7 @@ aws cloudwatch put-metric-alarm \
 ### Dominio
 
 - [ ] Dominio registrado
+- [ ] (Para certificados automáticos) Dominio verificado en Amazon SES con credenciales SMTP generadas y fuera de sandbox
 - [ ] Acceso a DNS management
 - [ ] (Opcional) Route 53 hosted zone creada
 
@@ -345,10 +357,10 @@ Una vez completado este checklist:
 
 - [AWS CLI Documentation](https://docs.aws.amazon.com/cli/)
 - [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [AWS Free Tier](https://aws.amazon.com/free/)
+- [AWS Free Tier y planes (Free/Paid)](https://aws.amazon.com/free/)
 - [AWS Cost Calculator](https://calculator.aws/)
 
 ---
 
-**Fecha:** 2026-02-02
-**Versión:** 1.0.0
+**Fecha:** 2026-11-25
+**Versión:** 2.0.0

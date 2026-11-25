@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 SSL Configuration Script
+# Moodle 5.3 LTS SSL Configuration Script
 # Version: 1.0.0
 # Date: 2026-02-02
 # Description: Configures Apache with Let's Encrypt SSL/TLS

@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 Infrastructure Provisioning Script
+# Moodle 5.3 LTS Infrastructure Provisioning Script
 # Version: 1.0.0
 # Date: 2026-02-02
 # Description: Wrapper for Terraform to provision AWS infrastructure
@@ -22,7 +22,7 @@ TERRAFORM_DIR="$PROJECT_ROOT/terraform"
 CONFIG_DIR="$PROJECT_ROOT/config"
 
 echo "======================================================================"
-echo "Moodle 5.1 Infrastructure Provisioning"
+echo "Moodle 5.3 LTS Infrastructure Provisioning"
 echo "Started: $(date)"
 echo "======================================================================"
 

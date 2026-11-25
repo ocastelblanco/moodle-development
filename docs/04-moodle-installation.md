@@ -1,6 +1,6 @@
-# Instalación de Moodle 5.1
+# Instalación de Moodle 5.3 LTS
 
-Guía completa para instalar Moodle 5.1 en el servidor configurado.
+Guía completa para instalar Moodle 5.3 LTS en el servidor configurado.
 
 ## 📋 Prerequisitos
 
@@ -35,8 +35,8 @@ Si prefieres instalar manualmente o entender el proceso:
 # Navegar al directorio web
 cd /var/www/html
 
-# Clonar Moodle 5.1 desde Git
-sudo git clone --depth=1 --branch MOODLE_51_STABLE \
+# Clonar Moodle 5.3 LTS desde Git
+sudo git clone --depth=1 --branch MOODLE_503_STABLE \
     https://github.com/moodle/moodle.git moodle
 
 # Verificar versión
@@ -56,7 +56,7 @@ sudo mv moodle /var/www/html/
 
 ```bash
 # Crear moodledata (fuera de web root por seguridad)
-# IMPORTANTE: La ubicación de /moodledata NO cambia en Moodle 5.1
+# IMPORTANTE: La ubicación de /moodledata NO cambia en Moodle 5.3
 sudo mkdir -p /moodledata
 
 # Crear subdirectorios
@@ -110,7 +110,7 @@ $CFG->dboptions = array(
 
 // Site configuration
 $CFG->wwwroot   = 'https://your-domain.com';
-$CFG->dataroot  = '/moodledata';  // NO cambia en Moodle 5.1
+$CFG->dataroot  = '/moodledata';  // NO cambia en Moodle 5.3
 $CFG->admin     = 'admin';
 $CFG->directorypermissions = 0770;
 
@@ -137,7 +137,7 @@ $CFG->passwordsaltmain = 'your-random-salt-here';
 require_once(__DIR__ . '/lib/setup.php');
 ```
 
-**Nota:** En Moodle 5.1, el archivo `config.php` permanece en `/var/www/html/moodle/config.php` (NO se mueve al directorio `/public`). El `$CFG->dataroot` sigue apuntando a `/moodledata`.
+**Nota:** En Moodle 5.3, el archivo `config.php` permanece en `/var/www/html/moodle/config.php` (NO se mueve al directorio `/public`). El `$CFG->dataroot` sigue apuntando a `/moodledata`.
 
 **Configurar permisos:**
 ```bash
@@ -183,11 +183,11 @@ sudo -u apache /usr/bin/php /var/www/html/moodle/admin/cli/install_database.php 
 - `--summary`: Descripción
 - `--agree-license`: Acepta la licencia GPL
 
-## 🆕 Moodle 5.1: Nuevo Routing Engine
+## 🆕 Moodle 5.3: Routing Engine y estructura /public (desde 5.1)
 
-### Cambios Importantes en la Versión 5.1
+### Cambios Importantes (introducidos en 5.1, vigentes en 5.3 LTS)
 
-Moodle 5.1 introduce un **nuevo Routing Engine** que requiere cambios en la configuración del servidor web:
+Moodle 5.1 introdujo un **nuevo Routing Engine** (vigente en 5.3) que requiere cambios en la configuración del servidor web:
 
 #### Estructura de Directorios
 ```
@@ -204,11 +204,12 @@ Moodle 5.1 introduce un **nuevo Routing Engine** que requiere cambios en la conf
 ```
 
 #### Requisitos PHP
-- **PHP mínimo:** 8.2.0 (anteriormente 8.1)
+- **PHP mínimo:** 8.3.0 (solo 64-bit); se usa PHP 8.4 (8.5 NO soportado)
+- Extensión `sodium` obligatoria y `max_input_vars >= 5000`
 - Verificar versión: `php -v`
 
 #### Cambios en Rutas
-| Elemento | Moodle 4.x | Moodle 5.1 |
+| Elemento | Moodle 4.x | Moodle 5.3 |
 |----------|-----------|------------|
 | DocumentRoot | `/var/www/html/moodle` | `/var/www/html/moodle/public` |
 | config.php | `/var/www/html/moodle/config.php` | `/var/www/html/moodle/config.php` (sin cambio) |
@@ -230,7 +231,7 @@ sudo vim /etc/cron.d/moodle
 
 ```cron
 # Moodle scheduled tasks
-# NOTA: La ruta del CLI NO cambia en Moodle 5.1
+# NOTA: La ruta del CLI NO cambia en Moodle 5.3
 * * * * * apache /usr/bin/php /var/www/html/moodle/admin/cli/cron.php > /dev/null 2>&1
 ```
 
@@ -246,11 +247,11 @@ sudo -u apache /usr/bin/php /var/www/html/moodle/admin/cli/cron.php
 
 Ver [06-ssl-configuration.md](06-ssl-configuration.md) para configuración completa.
 
-**Básico para Moodle 5.1:**
+**Básico para Moodle 5.3:**
 ```apache
 <VirtualHost *:80>
     ServerName yourdomain.com
-    # IMPORTANTE: En Moodle 5.1, DocumentRoot apunta al subdirectorio /public
+    # IMPORTANTE: En Moodle 5.3, DocumentRoot apunta al subdirectorio /public
     DocumentRoot /var/www/html/moodle/public
 
     <Directory /var/www/html/moodle/public>
@@ -265,7 +266,7 @@ Ver [06-ssl-configuration.md](06-ssl-configuration.md) para configuración compl
 </VirtualHost>
 ```
 
-**Cambio clave en Moodle 5.1:** El DocumentRoot ahora debe apuntar a `/var/www/html/moodle/public` en lugar de `/var/www/html/moodle`. Esto es parte del nuevo Routing Engine introducido en la versión 5.1.
+**Cambio clave (desde Moodle 5.1):** El DocumentRoot ahora debe apuntar a `/var/www/html/moodle/public` en lugar de `/var/www/html/moodle`. Esto es parte del nuevo Routing Engine introducido en la versión 5.1 y vigente en 5.3.
 
 ### 3. Reiniciar Servicios
 
@@ -456,8 +457,9 @@ sudo chmod -R 770 /moodledata
 4. **Personalizar Tema y Apariencia**
 5. **Crear Categorías y Cursos**
 6. **Configurar Autenticación de Usuarios**
+7. **Certificados automáticos:** requiere SMTP de Amazon SES configurado en Moodle (ver [10-certificates.md](10-certificates.md))
 
 ---
 
-**Fecha:** 2026-02-11
-**Versión:** 1.1.0
+**Fecha:** 2026-11-25
+**Versión:** 2.0.0

@@ -1,6 +1,6 @@
-# RDS MariaDB Configuration for Moodle 5.1
-# NOTE: Moodle 5.1 database requirements:
-# - MariaDB 10.11+ (current: 10.11.15 ✓)
+# RDS MariaDB Configuration for Moodle 5.3 LTS
+# NOTE: Moodle 5.3 LTS database requirements:
+# - MariaDB 11.4+ (using 11.8 LTS; 10.11 is no longer supported)
 # - MySQL 8.4+
 # - PostgreSQL 15+
 
@@ -82,7 +82,7 @@ resource "aws_db_parameter_group" "moodle" {
   count = var.create_rds ? 1 : 0
 
   name_prefix = "${local.name_prefix}-mariadb-"
-  family      = "mariadb10.11"
+  family      = "mariadb11.8"
   description = "Custom parameter group for Moodle MariaDB"
 
   # Moodle-specific optimizations
@@ -177,10 +177,10 @@ resource "aws_db_instance" "moodle" {
   parameter_group_name = aws_db_parameter_group.moodle[0].name
 
   # Backup
-  backup_retention_period = var.db_backup_retention_period
-  backup_window           = var.db_backup_window
-  maintenance_window      = var.db_maintenance_window
-  skip_final_snapshot     = false
+  backup_retention_period   = var.db_backup_retention_period
+  backup_window             = var.db_backup_window
+  maintenance_window        = var.db_maintenance_window
+  skip_final_snapshot       = false
   final_snapshot_identifier = "${local.name_prefix}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
 
   # Enable automated backups
@@ -192,13 +192,13 @@ resource "aws_db_instance" "moodle" {
   # Monitoring
   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
   monitoring_interval             = var.enable_detailed_monitoring ? 60 : 0
-  monitoring_role_arn            = var.enable_detailed_monitoring ? aws_iam_role.rds_monitoring[0].arn : null
+  monitoring_role_arn             = var.enable_detailed_monitoring ? aws_iam_role.rds_monitoring[0].arn : null
 
   # Performance Insights
   performance_insights_enabled = false # Can enable for additional cost
 
   # Updates
-  auto_minor_version_upgrade = true
+  auto_minor_version_upgrade  = true
   allow_major_version_upgrade = false
 
   # Deletion protection

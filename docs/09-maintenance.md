@@ -1,4 +1,4 @@
-# Mantenimiento de Moodle 5.1
+# Mantenimiento de Moodle 5.3 LTS
 
 Guía completa de mantenimiento preventivo y resolución de problemas.
 
@@ -77,7 +77,7 @@ sudo certbot renew --dry-run
 ✅ **Optimizar Base de Datos**
 ```bash
 # Optimize tables
-mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "OPTIMIZE TABLE mdl_sessions;"
+mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "OPTIMIZE TABLE mdl_sessions;"
 
 # Purge old sessions
 sudo -u apache php /var/www/html/moodle/admin/cli/cron.php --execute='\core\task\session_cleanup_task'
@@ -109,7 +109,7 @@ sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php --all
 sudo -u apache php /var/www/html/moodle/admin/cli/cron.php --execute='\core\task\session_cleanup_task'
 
 # Manual cleanup (si necesario)
-mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "DELETE FROM mdl_sessions WHERE timemodified < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 2 DAY));"
+mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "DELETE FROM mdl_sessions WHERE timemodified < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 2 DAY));"
 ```
 
 ### Limpiar Papelera
@@ -119,9 +119,27 @@ mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "DELETE FROM mdl_sessio
 sudo -u apache php /var/www/html/moodle/admin/cli/cron.php --execute='\core\task\file_trash_cleanup_task'
 ```
 
+## 🗓️ Ciclo de vida y soporte
+
+| Componente | Versión | Soporte de seguridad hasta | Notas |
+|------------|---------|----------------------------|-------|
+| Moodle | 5.3 LTS | ~oct 2029 | Lanzada 2026-10-05; soporte general hasta ~oct 2027 |
+| PHP | 8.4 | 31-dic-2028 | Mínimo de Moodle 5.3: 8.3; PHP 8.5 no soportado |
+| MariaDB | 11.8 LTS (RDS) | Ciclo LTS comunitario | Moodle 5.3 exige MariaDB >= 11.4 |
+| Amazon Linux 2023 | AL2023 (ARM64) | EOL 2029-06-30 | Paquetes PHP siguen el ciclo upstream |
+
+Planificar la siguiente migración de SO/PHP antes de mediados de 2028.
+
+### Ruta de actualización a Moodle 5.3 LTS
+
+- **Desde Moodle 4.4 o posterior → 5.3:** actualización directa. Requiere PHP 8.4 (o 8.3+), MariaDB 11.4+ y DocumentRoot en `/var/www/html/moodle/public`.
+- **Desde instalaciones existentes en 5.1 (MariaDB 10.11):** primero actualizar RDS de MariaDB 10.11 a 11.8 (snapshot manual previo, ventana de mantenimiento, parameter group `mariadb11.8`; RDS puede exigir saltos de versión mayor intermedios: seguir la ruta que indique la consola), verificar el sitio y SOLO ENTONCES actualizar el código a `MOODLE_503_STABLE` y ejecutar `upgrade.php`. La instalación de Moodle 5.3 falla contra MariaDB < 11.4.
+- **Plugins de certificados:** `mod_coursecertificate` y `tool_certificate` deben actualizarse junto con Moodle (misma ventana de mantenimiento). Verificar compatibilidad con 5.3 en moodle.org/plugins antes de actualizar.
+- **Moodle 6.0 (informativo):** elimina la API legacy de elementos de `mod_customcert`. Moodle 5.3 es la última versión que la incluye; migrar a `mod_coursecertificate` + `tool_certificate` antes de 6.0 si se usaba `mod_customcert`.
+
 ## 🔄 Actualizaciones de Moodle
 
-### Actualización Minor (5.1.0 → 5.1.1)
+### Actualización Minor (5.3.0 → 5.3.1)
 
 ```bash
 # 1. Backup first!
@@ -134,7 +152,7 @@ sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --enable
 # 3. Update code
 cd /var/www/html/moodle
 sudo -u apache git fetch origin
-sudo -u apache git checkout MOODLE_51_STABLE
+sudo -u apache git checkout MOODLE_503_STABLE
 sudo -u apache git pull
 
 # 4. Run upgrade
@@ -149,7 +167,7 @@ sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --disable
 
 **Nota sobre estructura de directorios:** Los scripts CLI permanecen en `/var/www/html/moodle/admin/cli/` (por encima del directorio `/public` que es el DocumentRoot del servidor web).
 
-### Actualización Major (5.1 → 5.2)
+### Actualización Major (futura: 5.3 LTS → 6.0)
 
 **⚠️ IMPORTANTE:** Probar en staging primero
 
@@ -161,13 +179,14 @@ sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --disable
 # - Have rollback plan ready
 ```
 
-### Actualización desde Moodle 4.x a 5.1
+### Actualización desde Moodle 4.x a 5.3 LTS
 
 **⚠️ CRÍTICO:** Este proceso requiere reconfiguración del servidor web
 
 **Requisitos previos:**
-- Estar en Moodle 4.2.3 o superior (path mínimo de actualización)
-- PHP 8.2.0+ instalado
+- Estar en Moodle 4.4 o superior (ruta mínima de actualización a 5.3)
+- PHP 8.4 instalado (`php8.4` en Amazon Linux 2023)
+- MariaDB 11.4+ (usar RDS MariaDB 11.8); MariaDB 10.11 ya no es compatible
 - Backup completo del sistema
 
 **Pasos:**
@@ -181,10 +200,10 @@ sudo tar -czf /var/backups/moodledata-$(date +%Y%m%d).tar.gz /moodledata
 # 2. Enable maintenance mode
 sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --enable
 
-# 3. Update code to 5.1
+# 3. Update code to 5.3 LTS
 cd /var/www/html/moodle
 sudo -u apache git fetch origin
-sudo -u apache git checkout MOODLE_51_STABLE
+sudo -u apache git checkout MOODLE_503_STABLE
 sudo -u apache git pull
 
 # 4. CRÍTICO: Reconfigurar Apache DocumentRoot
@@ -258,7 +277,7 @@ sudo systemctl reload httpd
 
 # 5. Restaurar base de datos
 gunzip < /var/backups/moodle/database/moodle-db-YYYYMMDD.sql.gz | \
-    mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME
+    mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME
 
 # 6. Disable maintenance mode
 sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --disable
@@ -281,7 +300,7 @@ iostat -x 1 5
 ps aux | grep -E 'httpd|php-fpm' | wc -l
 
 # Check database connections
-mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SHOW PROCESSLIST;"
+mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SHOW PROCESSLIST;"
 ```
 
 **Soluciones:**
@@ -316,7 +335,7 @@ sudo dmesg | grep -i "out of memory"
 aws rds describe-db-instances --db-instance-identifier acgdb
 
 # Test connection
-mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT 1;"
+mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT 1;"
 
 # Check security group
 # Verify EC2 security group can access RDS port 3306
@@ -373,7 +392,7 @@ sudo /usr/local/bin/moodle-health-check.sh
 
 # Or via CLI
 aws cloudwatch get-metric-statistics \
-    --namespace Moodle/EC2 \
+    --namespace CWAgent \
     --metric-name MEMORY_USED \
     --dimensions Name=InstanceId,Value=i-xxxxx \
     --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
@@ -393,7 +412,7 @@ ls -lh /var/backups/moodle/database/
 
 # Restore
 gunzip < /var/backups/moodle/database/moodle-db-YYYYMMDD.sql.gz | \
-    mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME
+    mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME
 ```
 
 **Moodledata:**
@@ -419,7 +438,7 @@ sudo tar -xzf /var/backups/moodle-code-YYYYMMDD.tar.gz -C /var/www/html/
 sudo -u apache php /var/www/html/moodle/admin/cli/maintenance.php --enable
 
 # 2. Restore database
-gunzip < /path/to/backup.sql.gz | mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME
+gunzip < /path/to/backup.sql.gz | mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME
 
 # 3. Restore code
 cd /var/www/html/moodle
@@ -447,7 +466,7 @@ sudo netstat -ant | grep :80 | grep ESTABLISHED | wc -l
 ps aux | grep php-fpm | grep -v grep | wc -l
 
 # Database connections
-mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SHOW STATUS LIKE 'Threads_connected';"
+mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SHOW STATUS LIKE 'Threads_connected';"
 
 # Disk I/O
 iostat -x 1 5
@@ -508,7 +527,7 @@ Moodle Community: https://moodle.org/mod/forum/
 Security Issues: security@moodle.org
 ```
 
-## 🆕 Consideraciones Específicas de Moodle 5.1
+## 🆕 Consideraciones Específicas de Moodle 5.3 LTS
 
 ### Estructura de Directorios /public
 
@@ -528,9 +547,9 @@ Security Issues: security@moodle.org
 sudo -u apache php /var/www/html/moodle/admin/cli/cfg.php --name=enableroutingenabled
 ```
 
-### Migración de Plugins Post-5.1
+### Migración de Plugins Post-5.3
 
-Después de actualizar a 5.1, algunos plugins pueden necesitar relocación:
+Después de actualizar a 5.3, algunos plugins pueden necesitar relocación:
 
 ```bash
 # 1. Listar plugins instalados
@@ -543,7 +562,7 @@ sudo -u apache php /var/www/html/moodle/admin/cli/uninstall_plugins.php --showal
 # (manual desde la interfaz web)
 ```
 
-### Troubleshooting Específico de 5.1
+### Troubleshooting Específico de 5.3 (estructura /public)
 
 **Problema:** Sitio muestra error 404 después de actualizar
 
@@ -590,10 +609,10 @@ sudo -u apache php /var/www/html/moodle/admin/cli/upgrade.php --non-interactive
 # Site administration → Notifications
 ```
 
-### Requisitos de PHP para Moodle 5.1
+### Requisitos de PHP para Moodle 5.3 LTS
 
-**Mínimo:** PHP 8.2.0
-**Recomendado:** PHP 8.3.x o 8.4.x
+**Mínimo:** PHP 8.3.0 (solo 64-bit)
+**Usado en este proyecto:** PHP 8.4 (`php8.4-*` en AL2023). PHP 8.5 no está soportado.
 
 ```bash
 # Verificar versión actual
@@ -606,17 +625,17 @@ php -m | grep -E 'sodium|curl|gd|intl|mbstring|zip|xml'
 php -i | grep max_input_vars
 ```
 
-### Base de Datos - Requisitos 5.1
+### Base de Datos - Requisitos 5.3
 
 | Motor | Versión Mínima | Proyecto |
 |-------|----------------|----------|
 | PostgreSQL | 15.0 | - |
 | MySQL | 8.4.0 | - |
-| MariaDB | 10.11.0 | ✅ 10.11.15 |
+| MariaDB | 11.4.0 | ✅ RDS MariaDB 11.8 |
 
 **Verificar versión de MariaDB:**
 ```bash
-mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT VERSION();"
+mariadb -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT VERSION();"
 ```
 
 ## ✅ Checklist de Mantenimiento
@@ -627,6 +646,7 @@ mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT VERSION();"
 
 ### Semanal
 - [ ] Revisar logs de error
+- [ ] Verificar cron y tarea `issue_certificates_task` sin retrasos (los certificados dependen del cron)
 - [ ] Verificar espacio en disco
 - [ ] Check SSL certificate status
 - [ ] Verificar Routing Engine activo (5.1+)
@@ -639,13 +659,14 @@ mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "SELECT VERSION();"
 - [ ] Security audit
 - [ ] Verificar permisos en /public directory (5.1+)
 
-### Post-Actualización a 5.1
+### Post-Actualización a 5.3 LTS
 - [ ] Verificar DocumentRoot apunta a /public
 - [ ] Confirmar Routing Engine activo
 - [ ] Verificar carga de assets estáticos
 - [ ] Probar login y navegación básica
 - [ ] Verificar funcionamiento de plugins
 - [ ] Revisar logs de error
+- [ ] Verificar plugins de certificados actualizados (mod_coursecertificate + tool_certificate) y que emiten certificados
 
 ---
 

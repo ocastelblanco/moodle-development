@@ -1,9 +1,9 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 Installation Script
+# Moodle 5.3 LTS Installation Script
 # Version: 1.0.0
 # Date: 2026-02-02
-# Description: Downloads and installs Moodle 5.1
+# Description: Downloads and installs Moodle 5.3 LTS
 ################################################################################
 
 set -e
@@ -21,7 +21,7 @@ exec > >(tee -a "$LOG_FILE")
 exec 2>&1
 
 echo "======================================================================"
-echo "Moodle 5.1 Installation"
+echo "Moodle 5.3 LTS Installation"
 echo "Started: $(date)"
 echo "======================================================================"
 
@@ -78,13 +78,28 @@ if ! systemctl is-active --quiet php-fpm; then
 fi
 echo "✓ PHP-FPM is running"
 
-# Check PHP version
-PHP_VERSION=$(php -r "echo PHP_VERSION;" | cut -d'.' -f1,2)
-if (( $(echo "$PHP_VERSION < 8.2" | bc -l) )); then
-    echo -e "${RED}ERROR: PHP 8.2+ required, found $PHP_VERSION${NC}"
+# Check PHP version (Moodle 5.3 requires >= 8.3 and < 8.5)
+PHP_VERSION=$(php -r "echo PHP_VERSION;")
+if ! php -r 'exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80500 ? 0 : 1);'; then
+    echo -e "${RED}ERROR: PHP >= 8.3 and < 8.5 required (8.4 recommended), found $PHP_VERSION${NC}"
     exit 1
 fi
 echo "✓ PHP version: $PHP_VERSION"
+
+# Check sodium extension (mandatory since Moodle 5.0)
+if ! php -m | grep -qi '^sodium$'; then
+    echo -e "${RED}ERROR: PHP sodium extension is not installed (dnf install php8.4-sodium)${NC}"
+    exit 1
+fi
+echo "✓ PHP sodium extension loaded"
+
+# Check max_input_vars (CLI value mirrors the php.d drop-in used by PHP-FPM)
+MAX_INPUT_VARS=$(php -r 'echo (int) ini_get("max_input_vars");')
+if [ "$MAX_INPUT_VARS" -lt 5000 ]; then
+    echo -e "${RED}ERROR: max_input_vars must be >= 5000, found $MAX_INPUT_VARS${NC}"
+    exit 1
+fi
+echo "✓ max_input_vars: $MAX_INPUT_VARS"
 
 # Test database connection
 echo -e "\n${BLUE}Testing database connection...${NC}"
@@ -97,6 +112,14 @@ if ! mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "USE $DB_NAME;" 2>/de
 fi
 echo "✓ Database connection successful"
 
+# Check database server version (Moodle 5.3 requires MariaDB >= 11.4)
+DB_SERVER_VERSION=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -N -e "SELECT VERSION();" 2>/dev/null | cut -d'-' -f1)
+if [ "$(printf '%s\n' "11.4.0" "$DB_SERVER_VERSION" | sort -V | head -1)" != "11.4.0" ]; then
+    echo -e "${RED}ERROR: MariaDB >= 11.4.0 required by Moodle 5.3, found $DB_SERVER_VERSION${NC}"
+    exit 1
+fi
+echo "✓ Database server version: $DB_SERVER_VERSION"
+
 ################################################################################
 # Download Moodle
 ################################################################################
@@ -104,7 +127,7 @@ echo "✓ Database connection successful"
 echo -e "\n${BLUE}[3/7] Downloading Moodle...${NC}"
 
 MOODLE_DIR="/var/www/html/moodle"
-MOODLE_VERSION="${MOODLE_VERSION:-MOODLE_51_STABLE}"
+MOODLE_VERSION="${MOODLE_VERSION:-MOODLE_503_STABLE}"
 
 # Backup existing installation if present
 if [ -d "$MOODLE_DIR" ] && [ "$(ls -A $MOODLE_DIR)" ]; then
@@ -244,6 +267,35 @@ else
 fi
 
 ################################################################################
+# Optional: Amazon SES SMTP configuration (credentials read from SSM, never hardcoded)
+################################################################################
+
+# Variables (from /root/moodle-config.env or the environment):
+#   SMTP_HOST            e.g. email-smtp.us-east-1.amazonaws.com (empty = skip)
+#   SMTP_USER_SSM_PARAM  SSM parameter name holding the SMTP username
+#   SMTP_PASS_SSM_PARAM  SSM parameter name holding the SMTP password (SecureString)
+#   NOREPLY_ADDRESS      sender address for Moodle emails
+if [ -n "${SMTP_HOST:-}" ] && [ -n "${SMTP_USER_SSM_PARAM:-}" ] && [ -n "${SMTP_PASS_SSM_PARAM:-}" ]; then
+    echo "Configuring SMTP via $SMTP_HOST..."
+    SMTP_USER=$(aws ssm get-parameter --name "$SMTP_USER_SSM_PARAM" --with-decryption --query Parameter.Value --output text)
+    SMTP_PASS=$(aws ssm get-parameter --name "$SMTP_PASS_SSM_PARAM" --with-decryption --query Parameter.Value --output text)
+
+    CFG_CLI="$MOODLE_DIR/admin/cli/cfg.php"
+    sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtphosts --set="${SMTP_HOST%%:*}:587"
+    sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtpsecure --set=tls
+    sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtpauthtype --set=LOGIN
+    sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtpuser --set="$SMTP_USER"
+    sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtppass --set="$SMTP_PASS"
+    if [ -n "${NOREPLY_ADDRESS:-}" ]; then
+        sudo -u apache /usr/bin/php "$CFG_CLI" --name=noreplyaddress --set="$NOREPLY_ADDRESS"
+    fi
+    unset SMTP_USER SMTP_PASS
+    echo "✓ SMTP configured (TLS, port 587)"
+else
+    echo "SMTP_HOST / SMTP_USER_SSM_PARAM / SMTP_PASS_SSM_PARAM not set, skipping SMTP configuration"
+fi
+
+################################################################################
 # Configure Moodle cron
 ################################################################################
 
@@ -310,7 +362,7 @@ echo "     https://$DOMAIN_NAME"
 echo ""
 echo "  5. IMPORTANT: Change admin password after first login!"
 echo ""
-echo "  6. Moodle 5.1: Verificar que Apache DocumentRoot apunta a"
+echo "  6. Moodle 5.3 LTS: Verificar que Apache DocumentRoot apunta a"
 echo "     /var/www/html/moodle/public (no a /var/www/html/moodle)"
 echo ""
 

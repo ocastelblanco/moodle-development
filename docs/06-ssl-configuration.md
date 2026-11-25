@@ -1,4 +1,4 @@
-# Configuración SSL/TLS para Moodle 5.1
+# Configuración SSL/TLS para Moodle 5.3 LTS
 
 Guía completa para configurar HTTPS con Let's Encrypt y optimizar seguridad SSL/TLS.
 
@@ -74,7 +74,7 @@ sudo vim /etc/httpd/conf.d/moodle.conf
 <VirtualHost *:80>
     ServerName yourdomain.com
     ServerAdmin admin@yourdomain.com
-    # IMPORTANTE: En Moodle 5.1, DocumentRoot apunta a /public
+    # IMPORTANTE: En Moodle 5.3 LTS, DocumentRoot apunta a /public
     DocumentRoot /var/www/html/moodle/public
 
     <Directory /var/www/html/moodle/public>
@@ -143,7 +143,7 @@ Contenido típico:
 <VirtualHost *:443>
     ServerName yourdomain.com
     ServerAdmin admin@yourdomain.com
-    # IMPORTANTE: En Moodle 5.1, DocumentRoot apunta a /public
+    # IMPORTANTE: En Moodle 5.3 LTS, DocumentRoot apunta a /public
     DocumentRoot /var/www/html/moodle/public
 
     <Directory /var/www/html/moodle/public>

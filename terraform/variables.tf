@@ -1,10 +1,10 @@
-# Variables for Moodle 5.1 AWS Infrastructure
+# Variables for Moodle 5.3 LTS AWS Infrastructure
 # Configure these values before running terraform apply
 #
-# NOTE: Moodle 5.1 requirements:
-# - PHP 8.2+ (8.2.x, 8.3.x, 8.4.x supported)
+# NOTE: Moodle 5.3 LTS requirements:
+# - PHP 8.3+ (8.4 used on Amazon Linux 2023; 8.5 not supported)
 # - Apache DocumentRoot must point to /var/www/html/moodle/public (not /var/www/html/moodle)
-# - MariaDB 10.11+, MySQL 8.4+, or PostgreSQL 15+
+# - MariaDB 11.4+ (RDS 11.8 used), MySQL 8.4+, or PostgreSQL 15+
 
 #############################################
 # General Configuration
@@ -38,7 +38,7 @@ variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
   default = {
-    Project     = "Moodle 5.1"
+    Project     = "Moodle 5.3 LTS"
     ManagedBy   = "Terraform"
     Environment = "Production"
   }
@@ -145,9 +145,9 @@ variable "db_instance_class" {
 }
 
 variable "db_engine_version" {
-  description = "MariaDB version"
+  description = "MariaDB major version (minor upgrades automatic; Moodle 5.3 needs >= 11.4)"
   type        = string
-  default     = "10.11.15"
+  default     = "11.8"
 }
 
 variable "db_allocated_storage" {
@@ -343,7 +343,7 @@ variable "swap_size_gb" {
 variable "moodle_version" {
   description = "Moodle version to install (branch name)"
   type        = string
-  default     = "MOODLE_51_STABLE"
+  default     = "MOODLE_503_STABLE"
 }
 
 variable "moodle_admin_user" {
@@ -373,4 +373,141 @@ variable "moodle_site_summary" {
   description = "Moodle site summary/description"
   type        = string
   default     = "Learning Management System"
+}
+
+#############################################
+# Scaling, Autoresize & Cost Control
+#############################################
+
+variable "enable_ebs_autogrow" {
+  description = "Automatically grow the /moodledata EBS volume when the disk alarm fires"
+  type        = bool
+  default     = true
+}
+
+variable "ebs_autogrow_threshold_percent" {
+  description = "Disk usage (%) of /moodledata that triggers the alarm and EBS autogrow"
+  type        = number
+  default     = 80
+
+  validation {
+    condition     = var.ebs_autogrow_threshold_percent > 0 && var.ebs_autogrow_threshold_percent < 100
+    error_message = "ebs_autogrow_threshold_percent must be between 1 and 99."
+  }
+}
+
+variable "ebs_autogrow_increment_percent" {
+  description = "Percentage by which the /moodledata volume grows on each autogrow run"
+  type        = number
+  default     = 25
+
+  validation {
+    condition     = var.ebs_autogrow_increment_percent >= 1 && var.ebs_autogrow_increment_percent <= 100
+    error_message = "ebs_autogrow_increment_percent must be between 1 and 100."
+  }
+}
+
+variable "ebs_autogrow_max_size_gb" {
+  description = "Maximum size (GB) EBS autogrow may reach for /moodledata"
+  type        = number
+  default     = 200
+
+  validation {
+    condition     = var.ebs_autogrow_max_size_gb >= 1 && var.ebs_autogrow_max_size_gb <= 16384
+    error_message = "ebs_autogrow_max_size_gb must be between 1 and 16384 (gp3 limit)."
+  }
+}
+
+variable "enable_compute_autoresize" {
+  description = "Schedule the weekly compute autoresize evaluation (EC2 + RDS)"
+  type        = bool
+  default     = false
+}
+
+variable "compute_autoresize_mode" {
+  description = "notify = only publish a recommendation to SNS; apply = upsize one ladder step (EC2 stop/start, RDS in maintenance window)"
+  type        = string
+  default     = "notify"
+
+  validation {
+    condition     = contains(["notify", "apply"], var.compute_autoresize_mode)
+    error_message = "compute_autoresize_mode must be \"notify\" or \"apply\"."
+  }
+}
+
+variable "ec2_instance_type_ladder" {
+  description = "Ordered EC2 instance types (smallest to largest) used by compute autoresize; the last item is the cap"
+  type        = list(string)
+  default     = ["t4g.small", "t4g.medium", "t4g.large", "t4g.xlarge"]
+
+  validation {
+    condition     = length(var.ec2_instance_type_ladder) > 0 && alltrue([for t in var.ec2_instance_type_ladder : can(regex("^[a-z0-9-]+\\.[a-z0-9]+$", t))])
+    error_message = "ec2_instance_type_ladder must be a non-empty list of valid instance types (e.g. t4g.medium)."
+  }
+}
+
+variable "rds_instance_class_ladder" {
+  description = "Ordered RDS instance classes (smallest to largest) used by compute autoresize; the last item is the cap"
+  type        = list(string)
+  default     = ["db.t4g.micro", "db.t4g.small", "db.t4g.medium", "db.t4g.large"]
+
+  validation {
+    condition     = length(var.rds_instance_class_ladder) > 0 && alltrue([for c in var.rds_instance_class_ladder : can(regex("^db\\.[a-z0-9-]+\\.[a-z0-9]+$", c))])
+    error_message = "rds_instance_class_ladder must be a non-empty list of valid RDS classes (e.g. db.t4g.micro)."
+  }
+}
+
+variable "autoresize_schedule" {
+  description = "EventBridge Scheduler expression (UTC) for the compute autoresize evaluation"
+  type        = string
+  default     = "cron(0 8 ? * SUN *)" # Sunday 03:00 Colombia time (UTC-5)
+
+  validation {
+    condition     = can(regex("^(cron|rate)\\(.+\\)$", var.autoresize_schedule))
+    error_message = "autoresize_schedule must be a cron(...) or rate(...) expression."
+  }
+}
+
+variable "cpu_high_threshold_percent" {
+  description = "Average CPU (%) considered high for alarms and autoresize evaluation"
+  type        = number
+  default     = 70
+
+  validation {
+    condition     = var.cpu_high_threshold_percent > 0 && var.cpu_high_threshold_percent <= 100
+    error_message = "cpu_high_threshold_percent must be between 1 and 100."
+  }
+}
+
+variable "cpu_credit_low_threshold" {
+  description = "CPUCreditBalance below which burstable instances are considered starved"
+  type        = number
+  default     = 50
+
+  validation {
+    condition     = var.cpu_credit_low_threshold >= 0
+    error_message = "cpu_credit_low_threshold must be >= 0."
+  }
+}
+
+variable "scaling_alert_emails" {
+  description = "Emails subscribed to the scaling alerts SNS topic and budget notifications (empty = no subscriptions)"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.scaling_alert_emails) <= 10 && alltrue([for e in var.scaling_alert_emails : can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", e))])
+    error_message = "scaling_alert_emails must contain at most 10 valid email addresses."
+  }
+}
+
+variable "monthly_budget_usd" {
+  description = "Monthly AWS cost budget in USD (alerts at 50/80/100% actual and 100% forecast)"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.monthly_budget_usd > 0
+    error_message = "monthly_budget_usd must be greater than 0."
+  }
 }

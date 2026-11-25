@@ -24,6 +24,7 @@ This skill implements proven optimization strategies from the ACG Calidad projec
 - Moodle installed and working
 - Root/sudo access
 - System has been running for at least 5 minutes
+- Stack: Moodle 5.3 LTS on PHP 8.4 (Amazon Linux 2023 `php8.4-fpm`; service `php-fpm`, config `/etc/php-fpm.d/www.conf`), RDS MariaDB 11.8
 
 ### Available automation
 

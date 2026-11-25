@@ -1,4 +1,4 @@
-# Terraform Outputs - Moodle 5.1 Infrastructure
+# Terraform Outputs - Moodle 5.3 LTS Infrastructure
 
 #############################################
 # Summary Output
@@ -21,11 +21,11 @@ output "deployment_summary" {
 output "connection_info" {
   description = "How to connect to your Moodle instance"
   value = {
-    ssh_command     = "ssh -i ~/.ssh/${var.key_pair_name}.pem ec2-user@${aws_eip.moodle.public_ip}"
-    public_ip       = aws_eip.moodle.public_ip
-    domain          = var.domain_name
-    moodle_url      = "https://${var.domain_name}"
-    admin_username  = var.moodle_admin_user
+    ssh_command    = "ssh -i ~/.ssh/${var.key_pair_name}.pem ec2-user@${aws_eip.moodle.public_ip}"
+    public_ip      = aws_eip.moodle.public_ip
+    domain         = var.domain_name
+    moodle_url     = "https://${var.domain_name}"
+    admin_username = var.moodle_admin_user
   }
   sensitive = false
 }
@@ -37,13 +37,13 @@ output "connection_info" {
 output "database_info" {
   description = "Database connection information"
   value = var.create_rds ? {
-    endpoint    = aws_db_instance.moodle[0].endpoint
-    address     = aws_db_instance.moodle[0].address
-    port        = aws_db_instance.moodle[0].port
-    database    = aws_db_instance.moodle[0].db_name
-    username    = aws_db_instance.moodle[0].username
-    connection  = "mysql -h ${aws_db_instance.moodle[0].address} -u ${var.db_username} -p ${var.db_name}"
-  } : {
+    endpoint   = aws_db_instance.moodle[0].endpoint
+    address    = aws_db_instance.moodle[0].address
+    port       = aws_db_instance.moodle[0].port
+    database   = aws_db_instance.moodle[0].db_name
+    username   = aws_db_instance.moodle[0].username
+    connection = "mysql -h ${aws_db_instance.moodle[0].address} -u ${var.db_username} -p ${var.db_name}"
+    } : {
     message = "RDS not created (create_rds = false)"
   }
   sensitive = true
@@ -90,10 +90,10 @@ locals {
 
   ec2_monthly_cost = lookup(local.ec2_costs, var.instance_type, 24.0)
   rds_monthly_cost = var.create_rds ? lookup(local.rds_costs, var.db_instance_class, 12.0) : 0
-  ebs_root_cost    = var.root_volume_size * 0.10  # gp3 $0.10/GB
+  ebs_root_cost    = var.root_volume_size * 0.10 # gp3 $0.10/GB
   ebs_data_cost    = var.data_volume_size * 0.10
   elastic_ip_cost  = 3.60
-  other_costs      = 2.00  # CloudWatch, etc
+  other_costs      = 2.00 # CloudWatch, etc
 
   total_monthly_cost = local.ec2_monthly_cost + local.rds_monthly_cost + local.ebs_root_cost + local.ebs_data_cost + local.elastic_ip_cost + local.other_costs
 }
@@ -101,14 +101,14 @@ locals {
 output "cost_estimate" {
   description = "Estimated monthly costs in USD"
   value = {
-    ec2          = "$${format("%.2f", local.ec2_monthly_cost)}"
-    rds          = "$${format("%.2f", local.rds_monthly_cost)}"
-    ebs_root     = "$${format("%.2f", local.ebs_root_cost)}"
-    ebs_data     = "$${format("%.2f", local.ebs_data_cost)}"
-    elastic_ip   = "$${format("%.2f", local.elastic_ip_cost)}"
-    other        = "$${format("%.2f", local.other_costs)}"
-    total_monthly = "$${format("%.2f", local.total_monthly_cost)}"
-    note         = "Estimates for us-east-1. Actual costs may vary."
+    ec2           = format("$%.2f", local.ec2_monthly_cost)
+    rds           = format("$%.2f", local.rds_monthly_cost)
+    ebs_root      = format("$%.2f", local.ebs_root_cost)
+    ebs_data      = format("$%.2f", local.ebs_data_cost)
+    elastic_ip    = format("$%.2f", local.elastic_ip_cost)
+    other         = format("$%.2f", local.other_costs)
+    total_monthly = format("$%.2f", local.total_monthly_cost)
+    note          = "Estimates for us-east-1. Actual costs may vary."
   }
 }
 
@@ -118,7 +118,7 @@ output "cost_estimate" {
 
 output "next_steps" {
   description = "What to do after Terraform apply"
-  value = <<-EOT
+  value       = <<-EOT
 
   ====================================================================
   🎉 Infrastructure provisioned successfully!
@@ -127,7 +127,7 @@ output "next_steps" {
   📋 Next Steps:
 
   1️⃣  Connect to your instance:
-     ${  "ssh -i ~/.ssh/${var.key_pair_name}.pem ec2-user@${aws_eip.moodle.public_ip}"}
+     ${"ssh -i ~/.ssh/${var.key_pair_name}.pem ec2-user@${aws_eip.moodle.public_ip}"}
 
   2️⃣  Verify configuration was loaded:
      source /root/moodle-config.env
@@ -141,7 +141,7 @@ output "next_steps" {
      ./05-optimize-system.sh
      ./06-setup-backups.sh
 
-     ⚠️  IMPORTANT for Moodle 5.1:
+     ⚠️  IMPORTANT for Moodle 5.3 LTS:
      Apache DocumentRoot must point to /var/www/html/moodle/public
      (not /var/www/html/moodle)
 
@@ -173,4 +173,28 @@ output "terraform_info" {
     workspace = terraform.workspace
     version   = "1.0.0"
   }
+}
+
+#############################################
+# Scaling & Cost Control
+#############################################
+
+output "scaling_alerts_topic_arn" {
+  description = "ARN of the SNS topic for scaling and cost alerts"
+  value       = aws_sns_topic.scaling_alerts.arn
+}
+
+output "ebs_autogrow_document_name" {
+  description = "SSM Automation document that grows the /moodledata EBS volume"
+  value       = aws_ssm_document.ebs_autogrow.name
+}
+
+output "compute_autoresize_document_name" {
+  description = "SSM Automation document that evaluates/applies EC2 and RDS upsizing"
+  value       = aws_ssm_document.compute_autoresize.name
+}
+
+output "monthly_budget_name" {
+  description = "Name of the AWS Budgets monthly cost budget"
+  value       = aws_budgets_budget.monthly.name
 }

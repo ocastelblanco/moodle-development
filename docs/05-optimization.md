@@ -1,6 +1,8 @@
 # Optimización del Sistema
 
-Guía completa para optimizar el rendimiento de Moodle 5.1 en AWS, basada en experiencia real del proyecto ACG Calidad.
+Guía completa para optimizar el rendimiento de Moodle 5.3 LTS en AWS, basada en experiencia real del proyecto ACG Calidad.
+
+> **Stack:** PHP 8.4 en Amazon Linux 2023 (`php8.4-fpm`; servicio `php-fpm`, configuración en `/etc/php-fpm.d/www.conf`, socket `/run/php-fpm/www.sock`, ini adicionales en `/etc/php.d/`). `max_input_vars` >= 5000 y extensión `sodium` obligatorias.
 
 ## 🎯 Objetivos de Optimización
 
@@ -398,7 +400,7 @@ sudo sysctl vm.swappiness=10
 
 ```php
 // Cache store configuration
-// NOTA: Las rutas de cache en /moodledata NO cambian en Moodle 5.1
+// NOTA: Las rutas de cache en /moodledata NO cambian en Moodle 5.3 LTS
 $CFG->cachedir = '/moodledata/cache';
 
 // Session handler
@@ -463,7 +465,7 @@ $CFG->session_memcached_prefix = 'mdl_';
 
 ```bash
 # /etc/cron.d/moodle
-# NOTA: La ruta CLI NO cambia en Moodle 5.1 (permanece ARRIBA de /public)
+# NOTA: La ruta CLI NO cambia en Moodle 5.3 LTS (permanece ARRIBA de /public)
 * * * * * apache /usr/bin/php /var/www/html/moodle/admin/cli/cron.php > /dev/null 2>&1
 ```
 

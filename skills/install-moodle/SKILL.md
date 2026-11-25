@@ -1,16 +1,16 @@
 ---
 name: install-moodle
-description: Downloads, installs, and configures Moodle 5.1 on the prepared server with database setup and initial configuration. Use when server is configured and RDS database is available, or when the user needs to install Moodle from source, configure the database, set up cron jobs, or create the admin user. Triggers: "install Moodle", "deploy Moodle application", "setup Moodle database", "configure Moodle", "Moodle cron", "create admin user".
+description: Downloads, installs, and configures Moodle 5.3 LTS on the prepared server with database setup and initial configuration. Use when server is configured and RDS database is available, or when the user needs to install Moodle from source, configure the database, set up cron jobs, or create the admin user. Triggers: "install Moodle", "deploy Moodle application", "setup Moodle database", "configure Moodle", "Moodle cron", "create admin user".
 ---
 
-# Install Moodle 5.1
+# Install Moodle 5.3 LTS
 
 ## Instructions
 
 ### Context
 
 This skill performs:
-- Downloads Moodle 5.1 from official GitHub repository
+- Downloads Moodle 5.3 LTS from official GitHub repository
 - Creates and configures config.php
 - Runs CLI installer to set up database
 - Configures cron for scheduled tasks
@@ -45,7 +45,7 @@ sudo scripts/03-install-moodle.sh
 1. **Download Moodle:**
    ```bash
    cd /var/www/html
-   sudo git clone --depth=1 --branch MOODLE_51_STABLE \
+   sudo git clone --depth=1 --branch MOODLE_503_STABLE \
        https://github.com/moodle/moodle.git moodle
    ```
 
@@ -149,7 +149,7 @@ sudo scripts/03-install-moodle.sh
 
 **Database settings:**
 - Type: MariaDB (native driver)
-- Collation: utf8mb4_unicode_ci (required for Moodle 5.1)
+- Collation: utf8mb4_unicode_ci (required for Moodle 5.3)
 - Prefix: mdl_ (standard)
 
 **Session handling:**
@@ -200,9 +200,9 @@ After installation:
    sudo tail -f /var/log/cron
    ```
 
-### Configuracion Apache para Moodle 5.1
+### Configuracion Apache para Moodle 5.3
 
-**IMPORTANTE:** Moodle 5.1 requiere que el DocumentRoot de Apache apunte al subdirectorio `/public`:
+**IMPORTANTE:** Moodle 5.3 (estructura `/public` desde 5.1) requiere que el DocumentRoot de Apache apunte al subdirectorio `/public`:
 
 ```apache
 <VirtualHost *:80>
@@ -217,7 +217,7 @@ After installation:
 </VirtualHost>
 ```
 
-El nuevo motor de enrutamiento (Routing Engine) de Moodle 5.1 procesa todas las solicitudes a traves del directorio `/public`. El directorio `/public` se crea automaticamente al clonar el repositorio de Moodle.
+El nuevo motor de enrutamiento (Routing Engine) de Moodle procesa todas las solicitudes a traves del directorio `/public`. El directorio `/public` se crea automaticamente al clonar el repositorio de Moodle.
 
 **Nota:** Los paths CLI no cambian. Siguen en `/var/www/html/moodle/admin/cli/...` y `config.php` permanece en `/var/www/html/moodle/config.php`.
 
@@ -227,7 +227,8 @@ El nuevo motor de enrutamiento (Routing Engine) de Moodle 5.1 procesa todas las 
 2. **Create Apache virtual host** (see `/configure-ssl` skill)
 3. **Configure SSL/HTTPS** (required before production)
 4. **Optimize system** (see `/optimize-system` skill)
-5. **Complete Moodle setup in browser:**
+5. **Configure outbound email (Amazon SES SMTP)** - required for automatic certificate emails (see `/setup-certificates`): set `smtphosts` (SES SMTP endpoint:587), `smtpsecure=TLS`, `smtpuser`/`smtppass` read from SSM Parameter Store (never hardcode credentials)
+6. **Complete Moodle setup in browser:**
    - Access https://yourdomain.com
    - Login with admin credentials
    - Complete initial configuration wizard
@@ -274,7 +275,7 @@ sudo tail -f /var/log/cron
 ### Expected output
 
 ```
-Moodle 5.1.x downloaded from GitHub
+Moodle 5.3.x downloaded from GitHub (branch MOODLE_503_STABLE)
 Permissions configured
 config.php created and secured
 Database installed (400+ tables created)
@@ -295,20 +296,20 @@ Next steps:
 
 ## Example usage
 
-**User:** "Server is set up, now install Moodle 5.1 with admin username 'moodleadmin'"
+**User:** "Server is set up, now install Moodle 5.3 LTS with admin username 'moodleadmin'"
 
-**Assistant:** I'll install Moodle 5.1 with the admin username 'moodleadmin'.
+**Assistant:** I'll install Moodle 5.3 LTS with the admin username 'moodleadmin'.
 
 [Loads configuration from /root/moodle-config.env]
-[Downloads Moodle 5.1 from GitHub]
+[Downloads Moodle 5.3 LTS from GitHub]
 [Creates config.php with proper settings]
 [Runs CLI installer with custom admin username]
 [Configures cron]
 [Tests installation]
 
-Moodle 5.1 installed successfully!
+Moodle 5.3 installed successfully!
 
-- Version: 5.1.x (Build: 20251006)
+- Version: 5.3.x
 - Admin user: moodleadmin
 - Database: 427 tables created
 - Cron: Running every minute

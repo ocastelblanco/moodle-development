@@ -46,7 +46,7 @@ enable_detailed_monitoring = false
 
 create_rds                  = true
 db_instance_class          = "db.t4g.micro"
-db_engine_version          = "10.11.15"
+db_engine_version          = "11.8"
 db_allocated_storage       = 20
 db_max_allocated_storage   = 100
 db_name                    = "moodle"
@@ -106,13 +106,38 @@ enable_swap  = true
 swap_size_gb = 0  # 0 = auto-calculate
 
 #############################################
+# Scaling, Autoresize & Cost Control
+#############################################
+
+# EBS autogrow for /moodledata (alarm -> SSM Automation)
+enable_ebs_autogrow            = true
+ebs_autogrow_threshold_percent = 80
+ebs_autogrow_increment_percent = 25
+ebs_autogrow_max_size_gb       = 200
+
+# Weekly compute autoresize: "notify" only recommends, "apply" upsizes one step
+# (EC2 stop/start = 2-5 min downtime; RDS waits for the maintenance window)
+enable_compute_autoresize = false
+compute_autoresize_mode   = "notify"
+ec2_instance_type_ladder  = ["t4g.small", "t4g.medium", "t4g.large", "t4g.xlarge"]
+rds_instance_class_ladder = ["db.t4g.micro", "db.t4g.small", "db.t4g.medium", "db.t4g.large"]
+autoresize_schedule       = "cron(0 8 ? * SUN *)"  # Sunday 03:00 Colombia (UTC-5)
+
+cpu_high_threshold_percent = 70
+cpu_credit_low_threshold   = 50
+
+# Alerts and budget (empty list = no email subscriptions / budget notifications)
+scaling_alert_emails = []  # e.g. ["ops@example.com"]
+monthly_budget_usd   = 30
+
+#############################################
 # Moodle Configuration
 #############################################
 
-# NOTE: Moodle 5.1 requires Apache DocumentRoot to point to /var/www/html/moodle/public
-# PHP 8.2+ is required (8.4.x recommended)
+# NOTE: Moodle 5.3 LTS requires Apache DocumentRoot to point to /var/www/html/moodle/public
+# PHP 8.4 on Amazon Linux 2023 (min 8.3, 8.5 not supported)
 
-moodle_version        = "MOODLE_51_STABLE"
+moodle_version        = "MOODLE_503_STABLE"
 moodle_admin_user     = "admin"
 moodle_admin_password = "AdminPass123!"  # CHANGE THIS!
 moodle_site_name      = "My Learning Platform"
@@ -123,7 +148,7 @@ moodle_site_summary   = "Online courses and training"
 #############################################
 
 tags = {
-  Project     = "Moodle 5.1"
+  Project     = "Moodle 5.3 LTS"
   ManagedBy   = "Terraform"
   Environment = "Production"
   Owner       = "your-name"
