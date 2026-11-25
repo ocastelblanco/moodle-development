@@ -1,6 +1,7 @@
 ---
 name: provision-infrastructure
-description: Provisions complete AWS infrastructure for Moodle 5.3 LTS using Terraform including EC2, RDS, EBS volumes, Security Groups, and IAM roles. Use when starting a new Moodle deployment from scratch or when the user needs to create AWS infrastructure for Moodle. Triggers: "deploy Moodle on AWS", "provision infrastructure", "create EC2 instance", "setup AWS for Moodle", "provision EC2", "set up RDS database", "configure networking and security groups".
+description: >-
+  Provisions complete AWS infrastructure for Moodle 5.3 LTS using Terraform including EC2, RDS, EBS volumes, Security Groups, and IAM roles. Use when starting a new Moodle deployment from scratch or when the user needs to create AWS infrastructure for Moodle. Triggers: "deploy Moodle on AWS", "provision infrastructure", "create EC2 instance", "setup AWS for Moodle", "provision EC2", "set up RDS database", "configure networking and security groups".
 ---
 
 # Provision AWS Infrastructure for Moodle

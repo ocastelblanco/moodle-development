@@ -1,6 +1,7 @@
 ---
 name: setup-moodle-server
-description: Installs and configures complete LAMP stack (Apache 2.4 + PHP 8.4 + MariaDB client) on Amazon Linux 2023 for Moodle 5.3 LTS. Use when infrastructure is provisioned and EC2 instance is ready, or when the user needs to configure a fresh server, install PHP extensions, or configure firewall and SELinux. Triggers: "setup server", "install LAMP", "configure Apache PHP", "prepare server for Moodle", "install PHP extensions", "configure firewall", "configure SELinux".
+description: >-
+  Installs and configures complete LAMP stack (Apache 2.4 + PHP 8.4 + MariaDB client) on Amazon Linux 2023 for Moodle 5.3 LTS. Use when infrastructure is provisioned and EC2 instance is ready, or when the user needs to configure a fresh server, install PHP extensions, or configure firewall and SELinux. Triggers: "setup server", "install LAMP", "configure Apache PHP", "prepare server for Moodle", "install PHP extensions", "configure firewall", "configure SELinux".
 ---
 
 # Setup Moodle Server

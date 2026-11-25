@@ -1,6 +1,7 @@
 ---
 name: troubleshoot-moodle
-description: Diagnoses and resolves common Moodle deployment and operational issues including performance problems, errors, and service failures. Use when issues are reported or site is not functioning properly. Triggers: "site is down", "503 error", "Moodle slow", "out of memory", "database error", "cron not running", "certificates not issued", "certificate email not received".
+description: >-
+  Diagnoses and resolves common Moodle deployment and operational issues including performance problems, errors, and service failures. Use when issues are reported or site is not functioning properly. Triggers: "site is down", "503 error", "Moodle slow", "out of memory", "database error", "cron not running", "certificates not issued", "certificate email not received".
 ---
 
 # Troubleshoot Moodle Issues

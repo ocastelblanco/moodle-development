@@ -1,6 +1,7 @@
 ---
 name: setup-backups
-description: Configures automated backup system for Moodle database, moodledata files, and configuration following the 3-2-1 backup strategy with S3 storage. Use when production deployment is ready or when the user needs automated backups, retention policies, or S3 backup storage. Triggers: "setup backups", "configure backup schedule", "backup to S3", "3-2-1 backup strategy", "backup retention", "database backup", "moodledata backup".
+description: >-
+  Configures automated backup system for Moodle database, moodledata files, and configuration following the 3-2-1 backup strategy with S3 storage. Use when production deployment is ready or when the user needs automated backups, retention policies, or S3 backup storage. Triggers: "setup backups", "configure backup schedule", "backup to S3", "3-2-1 backup strategy", "backup retention", "database backup", "moodledata backup".
 ---
 
 # Setup Moodle Backups

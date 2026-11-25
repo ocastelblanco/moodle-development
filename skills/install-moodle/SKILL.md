@@ -1,6 +1,7 @@
 ---
 name: install-moodle
-description: Downloads, installs, and configures Moodle 5.3 LTS on the prepared server with database setup and initial configuration. Use when server is configured and RDS database is available, or when the user needs to install Moodle from source, configure the database, set up cron jobs, or create the admin user. Triggers: "install Moodle", "deploy Moodle application", "setup Moodle database", "configure Moodle", "Moodle cron", "create admin user".
+description: >-
+  Downloads, installs, and configures Moodle 5.3 LTS on the prepared server with database setup and initial configuration. Use when server is configured and RDS database is available, or when the user needs to install Moodle from source, configure the database, set up cron jobs, or create the admin user. Triggers: "install Moodle", "deploy Moodle application", "setup Moodle database", "configure Moodle", "Moodle cron", "create admin user".
 ---
 
 # Install Moodle 5.3 LTS

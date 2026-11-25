@@ -184,9 +184,9 @@ O simplemente:
 - ✅ Verificación de cada paso
 - ✅ ~45-60 minutos para deployment completo
 
-**Skills disponibles:** Ver documentación completa en [skills/README.md](skills/README.md)
+**Skills disponibles:** Ver documentación completa en [skills/moodle-deployment/SKILL.md](skills/moodle-deployment/SKILL.md)
 
-**Más información:** Consulta la [documentación de AI Agent Skills](skills/README.md) para:
+**Más información:** Consulta la [skill orquestadora `moodle-deployment`](skills/moodle-deployment/SKILL.md) para:
 - Lista completa de skills disponibles
 - Cómo usar con Claude Code, ChatGPT u otros agentes
 - Ejemplos de prompts para diferentes escenarios
@@ -198,17 +198,17 @@ O simplemente:
 moodle-development/
 ├── README.md                    # Este archivo
 ├── skills/                      # 🤖 AI Agent Skills (Claude Code, etc.)
-│   ├── README.md                # Documentación de skills
-│   ├── provision-infrastructure.md
-│   ├── setup-moodle-server.md
-│   ├── install-moodle.md
-│   ├── configure-ssl.md
-│   ├── optimize-system.md
-│   ├── setup-backups.md
-│   ├── setup-monitoring.md
-│   ├── setup-certificates.md
-│   ├── scale-infrastructure.md
-│   └── troubleshoot-moodle.md
+│   ├── moodle-deployment/SKILL.md
+│   ├── provision-infrastructure/SKILL.md
+│   ├── setup-moodle-server/SKILL.md
+│   ├── install-moodle/SKILL.md
+│   ├── configure-ssl/SKILL.md
+│   ├── optimize-system/SKILL.md
+│   ├── setup-backups/SKILL.md
+│   ├── setup-monitoring/SKILL.md
+│   ├── setup-certificates/SKILL.md
+│   ├── scale-infrastructure/SKILL.md
+│   └── troubleshoot-moodle/SKILL.md
 ├── docs/                        # Documentación técnica detallada
 │   ├── 01-architecture-overview.md
 │   ├── 02-prerequisites.md
@@ -429,7 +429,7 @@ sudo dnf update -y
 
 ## 🤖 AI Agent Skills
 
-Este proyecto incluye **10 skills profesionales** diseñados específicamente para agentes de inteligencia artificial como Claude Code, ChatGPT y otros asistentes con capacidades de ejecución de código.
+Este proyecto incluye **11 skills profesionales** diseñados específicamente para agentes de inteligencia artificial como Claude Code, ChatGPT y otros asistentes con capacidades de ejecución de código.
 
 ### ¿Qué son los Skills?
 
@@ -444,16 +444,17 @@ Los skills son conjuntos estructurados de instrucciones que guían a los agentes
 
 ### Skills Disponibles
 
-1. **provision-infrastructure** - Provisión de infraestructura AWS con Terraform
-2. **setup-moodle-server** - Instalación y configuración del stack LAMP
-3. **install-moodle** - Deployment de Moodle 5.3 LTS desde fuentes oficiales
-4. **configure-ssl** - Configuración SSL/HTTPS con Let's Encrypt
-5. **optimize-system** - Optimización de sistema basada en experiencia real (ACG)
-6. **setup-backups** - Sistema de backups automatizado con estrategia 3-2-1
-7. **setup-monitoring** - Monitoreo CloudWatch con alarmas y dashboards
-8. **troubleshoot-moodle** - Diagnóstico y resolución de problemas comunes
-9. **setup-certificates** - Certificados automáticos con verificación QR (mod_coursecertificate + SES)
-10. **scale-infrastructure** - Diagnóstico y escalado vertical (EC2/RDS/EBS), operación continua
+1. **moodle-deployment** - Orquestadora: coordina las fases del despliegue completo
+2. **provision-infrastructure** - Provisión de infraestructura AWS con Terraform
+3. **setup-moodle-server** - Instalación y configuración del stack LAMP
+4. **install-moodle** - Deployment de Moodle 5.3 LTS desde fuentes oficiales
+5. **configure-ssl** - Configuración SSL/HTTPS con Let's Encrypt
+6. **optimize-system** - Optimización de sistema basada en experiencia real (ACG)
+7. **setup-backups** - Sistema de backups automatizado con estrategia 3-2-1
+8. **setup-monitoring** - Monitoreo CloudWatch con alarmas y dashboards
+9. **troubleshoot-moodle** - Diagnóstico y resolución de problemas comunes
+10. **setup-certificates** - Certificados automáticos con verificación QR (mod_coursecertificate + SES)
+11. **scale-infrastructure** - Diagnóstico y escalado vertical (EC2/RDS/EBS), operación continua
 
 ### Uso con Agentes de IA
 
@@ -484,7 +485,7 @@ Los skills están basados en el **proyecto ACG Calidad** (Moodle 4.1 → 5.x), i
 - Monitoreo de memoria que previene caídas del servicio
 - Estrategias de backup probadas en producción
 
-**Documentación completa**: [skills/README.md](skills/README.md)
+**Documentación completa**: [skills/moodle-deployment/SKILL.md](skills/moodle-deployment/SKILL.md)
 
 ## 🆕 Novedades de Moodle 5.x (estructura /public y 5.3 LTS)
 

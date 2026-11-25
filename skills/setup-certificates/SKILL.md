@@ -1,6 +1,7 @@
 ---
 name: setup-certificates
-description: Installs and configures automatic course-completion certificates in Moodle 5.3 LTS (Amazon Linux 2023, PHP 8.4, RDS MariaDB 11.8) using mod_coursecertificate + tool_certificate, with PDF delivery by email through Amazon SES SMTP and public verification by code/QR. Use when a student must automatically receive a downloadable and emailed certificate once they complete a course and reach a minimum course grade, or when the user needs to design certificate templates, configure verification, or troubleshoot certificates that are not issued or not emailed. Triggers: "certificados", "certificates", "certificate on completion", "certificado automático", "verificación QR", "verify certificate", "course certificate", "tool_certificate", "mod_coursecertificate", "certificado por correo".
+description: >-
+  Installs and configures automatic course-completion certificates in Moodle 5.3 LTS (Amazon Linux 2023, PHP 8.4, RDS MariaDB 11.8) using mod_coursecertificate + tool_certificate, with PDF delivery by email through Amazon SES SMTP and public verification by code/QR. Use when a student must automatically receive a downloadable and emailed certificate once they complete a course and reach a minimum course grade, or when the user needs to design certificate templates, configure verification, or troubleshoot certificates that are not issued or not emailed. Triggers: "certificados", "certificates", "certificate on completion", "certificado automático", "verificación QR", "verify certificate", "course certificate", "tool_certificate", "mod_coursecertificate", "certificado por correo".
 ---
 
 # Setup Course Certificates (Moodle 5.3 LTS)

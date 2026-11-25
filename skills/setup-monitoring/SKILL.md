@@ -1,6 +1,7 @@
 ---
 name: setup-monitoring
-description: Configures comprehensive monitoring system using AWS CloudWatch for metrics, logs, and alarms to ensure Moodle availability and performance. Use when production deployment needs visibility, alerting, log aggregation, or dashboards. Triggers: "setup monitoring", "configure CloudWatch", "create alarms", "monitor Moodle server", "CloudWatch metrics", "log aggregation", "system health monitoring".
+description: >-
+  Configures comprehensive monitoring system using AWS CloudWatch for metrics, logs, and alarms to ensure Moodle availability and performance. Use when production deployment needs visibility, alerting, log aggregation, or dashboards. Triggers: "setup monitoring", "configure CloudWatch", "create alarms", "monitor Moodle server", "CloudWatch metrics", "log aggregation", "system health monitoring".
 ---
 
 # Setup Moodle Monitoring

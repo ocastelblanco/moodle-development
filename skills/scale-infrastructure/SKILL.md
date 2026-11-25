@@ -1,6 +1,7 @@
 ---
 name: scale-infrastructure
-description: Diagnoses load on a running single-server Moodle deployment (EC2 + EBS + RDS) and scales it vertically, manually or via Terraform automation. Use when the site is slow, CPU/memory/disk are high, AWS credits or the free plan are a concern, or capacity must grow. Triggers: "escalar", "aumentar capacidad", "resize", "más CPU", "más disco", "free tier", "créditos AWS", "autoescalado", "scale up", "out of disk", "CPU credits".
+description: >-
+  Diagnoses load on a running single-server Moodle deployment (EC2 + EBS + RDS) and scales it vertically, manually or via Terraform automation. Use when the site is slow, CPU/memory/disk are high, AWS credits or the free plan are a concern, or capacity must grow. Triggers: "escalar", "aumentar capacidad", "resize", "más CPU", "más disco", "free tier", "créditos AWS", "autoescalado", "scale up", "out of disk", "CPU credits".
 ---
 
 # Scale Infrastructure

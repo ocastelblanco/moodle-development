@@ -1,6 +1,7 @@
 ---
 name: configure-ssl
-description: Configures SSL/TLS with Let's Encrypt free certificate, implements security headers, and achieves A+ SSL Labs rating. Use when Moodle is installed and domain points to server, or when the user needs HTTPS, certificate renewal, or security headers. Triggers: "enable HTTPS", "configure SSL", "get SSL certificate", "secure site with TLS", "Let's Encrypt", "certificate renewal", "security headers", "HSTS".
+description: >-
+  Configures SSL/TLS with Let's Encrypt free certificate, implements security headers, and achieves A+ SSL Labs rating. Use when Moodle is installed and domain points to server, or when the user needs HTTPS, certificate renewal, or security headers. Triggers: "enable HTTPS", "configure SSL", "get SSL certificate", "secure site with TLS", "Let's Encrypt", "certificate renewal", "security headers", "HSTS".
 ---
 
 # Configure SSL/HTTPS
