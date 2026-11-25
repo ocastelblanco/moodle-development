@@ -13,7 +13,7 @@
 
 <!-- Header block for project -->
 
-[![AI-generated: contenido producido principalmente por un modelo de IA](https://img.shields.io/static/v1?label=&message=AI-generated&color=red)](https://nasa-ammos.github.io/slim/?search=Badges) [![Best Practices from SLIM: este proyecto sigue las buenas prácticas de SLIM](https://img.shields.io/badge/Best%20Practices%20from-SLIM-blue)](https://nasa-ammos.github.io/slim/) ![Moodle 5.3 LTS](https://img.shields.io/badge/Moodle-5.3%20LTS-orange) ![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777bb4) ![MariaDB 11.8](https://img.shields.io/badge/MariaDB-11.8%20LTS-003545) ![Amazon Linux 2023](https://img.shields.io/badge/Amazon%20Linux-2023-ff9900)
+[![AI-assisted: escrito por una persona con ayuda de herramientas de IA](https://img.shields.io/static/v1?label=&message=AI-assisted&color=gold)](https://nasa-ammos.github.io/slim/?search=Badges) [![Best Practices from SLIM: este proyecto sigue las buenas prácticas de SLIM](https://img.shields.io/badge/Best%20Practices%20from-SLIM-blue)](https://nasa-ammos.github.io/slim/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue)](LICENSE) ![Moodle 5.3 LTS](https://img.shields.io/badge/Moodle-5.3%20LTS-orange) ![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777bb4) ![MariaDB 11.8](https://img.shields.io/badge/MariaDB-11.8%20LTS-003545) ![Amazon Linux 2023](https://img.shields.io/badge/Amazon%20Linux-2023-ff9900)
 
 Este repositorio es un conjunto de herramientas para montar un Moodle de producción en AWS con la mayor ventana de soporte disponible: Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8 y Amazon Linux 2023 sobre Graviton (ARM64). Está pensado para quienes administran aulas virtuales y para agentes de IA (Claude Code y similares) que ejecutan el despliegue con las skills incluidas.
 
@@ -105,7 +105,7 @@ El script 09 se ejecuta **desde tu máquina** y sirve para la operación diaria:
 ## Matriz de versiones
 
 | Componente | Versión | Soporte |
-|------------|---------|---------|
+| ------------ | --------- | --------- |
 | Moodle | 5.3 LTS (`MOODLE_503_STABLE`) | Soporte general hasta ~oct 2027, seguridad hasta ~oct 2029 |
 | PHP | 8.4 (`php8.4-*` en AL2023) | Seguridad hasta 31-dic-2028. Moodle 5.3 exige >= 8.3 y no soporta 8.5 |
 | Base de datos | RDS for MariaDB 11.8 (LTS) | Moodle 5.3 exige MariaDB >= 11.4 |
@@ -116,7 +116,7 @@ El script 09 se ejecuta **desde tu máquina** y sirve para la operación diaria:
 Cada skill es una carpeta con un `SKILL.md`. Cópialas a `~/.claude/skills/` (todos los proyectos) o a `.claude/skills/` (un proyecto).
 
 | Skill | Propósito |
-|-------|-----------|
+| ------- | ----------- |
 | [moodle-deployment](skills/moodle-deployment/SKILL.md) | Orquesta todo el despliegue |
 | [provision-infrastructure](skills/provision-infrastructure/SKILL.md) | Recursos AWS con Terraform |
 | [setup-moodle-server](skills/setup-moodle-server/SKILL.md) | Stack LAMP en Amazon Linux 2023 |
@@ -144,31 +144,24 @@ Cifras mensuales aproximadas para us-east-1, 2026. Consulta los precios de AWS a
 
 ## Historial de cambios
 
-Todavía no existe un `CHANGELOG.md`, así que el historial vive aquí. El detalle está en los [pull requests](https://github.com/ocastelblanco/moodle-development/pulls).
+Consulta [CHANGELOG.md](CHANGELOG.md) para ver el historial completo de cambios. El detalle de cada cambio está en los [pull requests](https://github.com/ocastelblanco/moodle-development/pulls).
 
-* **v2.0.0 (2026-11-25):**
-  * Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8.
-  * Corrección de la rama errónea `MOODLE_51_STABLE`.
-  * Skill de certificados automáticos.
-  * Skill de escalado con modos manual y automático.
-  * Credenciales SMTP de SES con Terraform.
-* **v1.1.0 (2026-02-11):** Moodle 5.1, estructura de directorio `/public` y Routing Engine.
-* **v1.0.0 (2026-02-02):** skills iniciales, Terraform y scripts de despliegue.
+Última versión: **v2.0.0 (2026-11-25)**, que incluye Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8, certificados automáticos, escalado y credenciales SMTP de SES con Terraform.
 
 ## Preguntas frecuentes (FAQ)
 
 1. **¿Por qué no Ubuntu 26.04?**
-   - Trae PHP 8.5, que Moodle 5.3 no soporta. Amazon Linux 2023 permite fijar PHP 8.4.
+   * Trae PHP 8.5, que Moodle 5.3 no soporta. Amazon Linux 2023 permite fijar PHP 8.4.
 2. **¿Por qué no seguir con MariaDB 10.11?**
-   - Moodle 5.3 subió el mínimo a MariaDB 11.4.0, así que 10.11 ya no permite instalar.
+   * Moodle 5.3 subió el mínimo a MariaDB 11.4.0, así que 10.11 ya no permite instalar.
 3. **¿`tool_certificate` es compatible con Moodle 5.3?**
-   - Al momento de escribir esto, el directorio de plugins lo lista hasta la 5.2, mientras que `mod_coursecertificate` cubre la 5.3. La skill de certificados obliga a comprobarlo antes de instalar y describe un plan B (`mod_customcert`).
+   * Al momento de escribir esto, el directorio de plugins lo lista hasta la 5.2, mientras que `mod_coursecertificate` cubre la 5.3. La skill de certificados obliga a comprobarlo antes de instalar y describe un plan B (`mod_customcert`).
 4. **¿Qué pasa con Terraform después de un cambio de tamaño automático?**
-   - Actualiza `instance_type`, `db_instance_class` o `data_volume_size` en `terraform.tfvars` antes del siguiente `terraform apply`. Si no, Terraform intentará revertir el cambio.
+   * Actualiza `instance_type`, `db_instance_class` o `data_volume_size` en `terraform.tfvars` antes del siguiente `terraform apply`. Si no, Terraform intentará revertir el cambio.
 5. **¿Está probado en una cuenta real de AWS?**
-   - Todavía no. Los scripts y Terraform pasan las comprobaciones de sintaxis (`bash -n`, `shellcheck`, `terraform validate`). Ejecuta primero `terraform plan` en una cuenta de pruebas.
+   * Todavía no. Los scripts y Terraform pasan las comprobaciones de sintaxis (`bash -n`, `shellcheck`, `terraform validate`). Ejecuta primero `terraform plan` en una cuenta de pruebas.
 6. **¿Escala horizontalmente?**
-   - No. Es un diseño de un solo servidor con escalado vertical. El Auto Scaling con balanceador, EFS y Valkey está previsto para una fase posterior.
+   * No. Es un diseño de un solo servidor con escalado vertical. El Auto Scaling con balanceador, EFS y Valkey está previsto para una fase posterior.
 
 ## Contribuir
 
@@ -183,7 +176,7 @@ El código y los comentarios están en inglés. La documentación está en espa�
 
 ## Licencia
 
-Este repositorio todavía no incluye un archivo de licencia. Hasta que el propietario agregue una, todos los derechos están reservados por defecto. Abre una incidencia si quieres reutilizar el código.
+Distribuido bajo la [Licencia Apache 2.0](LICENSE).
 
 ## Soporte
 

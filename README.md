@@ -13,7 +13,7 @@
 
 <!-- Header block for project -->
 
-[![AI-generated: primarily produced by an AI model](https://img.shields.io/static/v1?label=&message=AI-generated&color=red)](https://nasa-ammos.github.io/slim/?search=Badges) [![Best Practices from SLIM: this project follows SLIM best practices](https://img.shields.io/badge/Best%20Practices%20from-SLIM-blue)](https://nasa-ammos.github.io/slim/) ![Moodle 5.3 LTS](https://img.shields.io/badge/Moodle-5.3%20LTS-orange) ![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777bb4) ![MariaDB 11.8](https://img.shields.io/badge/MariaDB-11.8%20LTS-003545) ![Amazon Linux 2023](https://img.shields.io/badge/Amazon%20Linux-2023-ff9900)
+[![AI-assisted: written by a human with help from AI tools](https://img.shields.io/static/v1?label=&message=AI-assisted&color=gold)](https://nasa-ammos.github.io/slim/?search=Badges) [![Best Practices from SLIM: this project follows SLIM best practices](https://img.shields.io/badge/Best%20Practices%20from-SLIM-blue)](https://nasa-ammos.github.io/slim/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue)](LICENSE) ![Moodle 5.3 LTS](https://img.shields.io/badge/Moodle-5.3%20LTS-orange) ![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777bb4) ![MariaDB 11.8](https://img.shields.io/badge/MariaDB-11.8%20LTS-003545) ![Amazon Linux 2023](https://img.shields.io/badge/Amazon%20Linux-2023-ff9900)
 
 This repository is a toolkit for standing up a production Moodle on AWS with the longest support window available: Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8 and Amazon Linux 2023 on Graviton (ARM64). It is meant for people who run virtual classrooms and for AI agents (Claude Code and similar) that execute the deployment through the bundled skills.
 
@@ -105,7 +105,7 @@ Script 09 runs **from your machine** and is meant for day-two operations:
 ## Version Matrix
 
 | Component | Version | Support |
-|-----------|---------|---------|
+| ----------- | --------- | --------- |
 | Moodle | 5.3 LTS (`MOODLE_503_STABLE`) | General support to ~Oct 2027, security to ~Oct 2029 |
 | PHP | 8.4 (`php8.4-*` on AL2023) | Security to 31 Dec 2028. Moodle 5.3 needs >= 8.3 and does not support 8.5 |
 | Database | RDS for MariaDB 11.8 (LTS) | Moodle 5.3 requires MariaDB >= 11.4 |
@@ -116,7 +116,7 @@ Script 09 runs **from your machine** and is meant for day-two operations:
 Each skill is a folder with a `SKILL.md`. Copy them to `~/.claude/skills/` (all projects) or `.claude/skills/` (one project).
 
 | Skill | Purpose |
-|-------|---------|
+| ------- | --------- |
 | [moodle-deployment](skills/moodle-deployment/SKILL.md) | Orchestrates the whole deployment |
 | [provision-infrastructure](skills/provision-infrastructure/SKILL.md) | AWS resources with Terraform |
 | [setup-moodle-server](skills/setup-moodle-server/SKILL.md) | LAMP stack on Amazon Linux 2023 |
@@ -144,31 +144,24 @@ Approximate monthly figures for us-east-1, 2026. Check the AWS pricing pages bef
 
 ## Changelog
 
-There is no `CHANGELOG.md` yet, so the history lives here. See the [pull requests](https://github.com/ocastelblanco/moodle-development/pulls) for details.
+See [CHANGELOG.md](CHANGELOG.md) for the full history of changes (in Spanish). Details of each change are in the [pull requests](https://github.com/ocastelblanco/moodle-development/pulls).
 
-* **v2.0.0 (2026-11-25):**
-  * Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8.
-  * Fixed the wrong `MOODLE_51_STABLE` branch.
-  * Automatic certificates skill.
-  * Scaling skill with manual and automatic modes.
-  * SES SMTP credentials via Terraform.
-* **v1.1.0 (2026-02-11):** Moodle 5.1, `/public` directory structure and Routing Engine.
-* **v1.0.0 (2026-02-02):** initial skills, Terraform and deployment scripts.
+Latest release: **v2.0.0 (2026-11-25)**, which brings Moodle 5.3 LTS, PHP 8.4, RDS MariaDB 11.8, automatic certificates, scaling and SES SMTP credentials with Terraform.
 
 ## Frequently Asked Questions (FAQ)
 
 1. **Why not Ubuntu 26.04?**
-   - It ships PHP 8.5, which Moodle 5.3 does not support. Amazon Linux 2023 lets you pin PHP 8.4.
+   * It ships PHP 8.5, which Moodle 5.3 does not support. Amazon Linux 2023 lets you pin PHP 8.4.
 2. **Why not keep MariaDB 10.11?**
-   - Moodle 5.3 raised the minimum to MariaDB 11.4.0, so 10.11 no longer installs.
+   * Moodle 5.3 raised the minimum to MariaDB 11.4.0, so 10.11 no longer installs.
 3. **Is `tool_certificate` compatible with Moodle 5.3?**
-   - At the time of writing the plugins directory lists it up to 5.2, while `mod_coursecertificate` covers 5.3. The certificates skill makes you check this before installing and describes a plan B (`mod_customcert`).
+   * At the time of writing the plugins directory lists it up to 5.2, while `mod_coursecertificate` covers 5.3. The certificates skill makes you check this before installing and describes a plan B (`mod_customcert`).
 4. **What happens to Terraform after an automatic resize?**
-   - Update `instance_type`, `db_instance_class` or `data_volume_size` in `terraform.tfvars` before the next `terraform apply`. Otherwise Terraform tries to revert the change.
+   * Update `instance_type`, `db_instance_class` or `data_volume_size` in `terraform.tfvars` before the next `terraform apply`. Otherwise Terraform tries to revert the change.
 5. **Is it tested on a real AWS account?**
-   - Not yet. Scripts and Terraform pass syntax checks (`bash -n`, `shellcheck`, `terraform validate`). Run `terraform plan` in a test account first.
+   * Not yet. Scripts and Terraform pass syntax checks (`bash -n`, `shellcheck`, `terraform validate`). Run `terraform plan` in a test account first.
 6. **Does it scale horizontally?**
-   - No. It is a single-server design with vertical scaling. Auto Scaling with a load balancer, EFS and Valkey is planned for a later phase.
+   * No. It is a single-server design with vertical scaling. Auto Scaling with a load balancer, EFS and Valkey is planned for a later phase.
 
 ## Contributing
 
@@ -183,7 +176,7 @@ Code and comments are in English. Documentation is in Spanish, and the READMEs a
 
 ## License
 
-This repository does not include a license file yet. Until the owner adds one, all rights are reserved by default. Open an issue if you want to reuse the code.
+Distributed under the [Apache License 2.0](LICENSE).
 
 ## Support
 
