@@ -1,4 +1,4 @@
-# EC2 Instance Configuration for Moodle 5.1
+# EC2 Instance Configuration for Moodle 5.3 LTS
 
 #############################################
 # Security Group
@@ -248,7 +248,7 @@ locals {
 
     chmod 600 /root/moodle-config.env
 
-    # NOTE: Moodle 5.1 uses /var/www/html/moodle/public as DocumentRoot
+    # NOTE: Moodle 5.3 LTS uses /var/www/html/moodle/public as DocumentRoot
     # Apache configuration must point to the /public subdirectory
 
     echo "=== EC2 Initialization Completed ==="

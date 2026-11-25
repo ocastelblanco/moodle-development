@@ -1,6 +1,7 @@
 ---
 name: optimize-system
-description: Optimizes PHP-FPM, Apache, and system resources based on available RAM. Includes automatic configuration of memory limits, SWAP, and monitoring. Use when experiencing performance issues or after Moodle installation. Triggers: "optimize server", "fix memory issues", "tune PHP-FPM", "prevent OOM", "improve performance".
+description: >-
+  Optimizes PHP-FPM, Apache, and system resources based on available RAM. Includes automatic configuration of memory limits, SWAP, and monitoring. Use when experiencing performance issues or after Moodle installation. Triggers: "optimize server", "fix memory issues", "tune PHP-FPM", "prevent OOM", "improve performance".
 ---
 
 # Optimize Moodle System
@@ -24,6 +25,7 @@ This skill implements proven optimization strategies from the ACG Calidad projec
 - Moodle installed and working
 - Root/sudo access
 - System has been running for at least 5 minutes
+- Stack: Moodle 5.3 LTS on PHP 8.4 (Amazon Linux 2023 `php8.4-fpm`; service `php-fpm`, config `/etc/php-fpm.d/www.conf`), RDS MariaDB 11.8
 
 ### Available automation
 

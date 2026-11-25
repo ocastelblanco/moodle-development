@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 Monitoring Setup Script
+# Moodle 5.3 LTS Monitoring Setup Script
 # Version: 1.0.0
 # Date: 2026-02-02
 # Description: Configures CloudWatch monitoring and alerting
@@ -87,7 +87,11 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CW_C
     }
   },
   "metrics": {
-    "namespace": "Moodle/EC2",
+    "namespace": "CWAgent",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "aggregation_dimensions": [["InstanceId", "path"]],
     "metrics_collected": {
       "cpu": {
         "measurement": [
@@ -109,7 +113,6 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CW_C
         "measurement": [
           {
             "name": "used_percent",
-            "rename": "DISK_USED",
             "unit": "Percent"
           },
           {
@@ -120,8 +123,10 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CW_C
         ],
         "metrics_collection_interval": 60,
         "resources": [
-          "*"
-        ]
+          "/",
+          "/moodledata"
+        ],
+        "drop_device": true
       },
       "diskio": {
         "measurement": [
@@ -240,7 +245,7 @@ free -h | grep -E "Mem:|Swap:"
 # Check database connectivity
 if [ -f /root/moodle-config.env ]; then
     source /root/moodle-config.env
-    if mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
+    if mariadb -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
         echo ""
         echo "✓ Database: Connected"
     else
@@ -255,6 +260,24 @@ if [ -n "$LAST_CRON" ]; then
     echo "✓ Moodle Cron: Running (executed in last 2 min)"
 else
     echo "? Moodle Cron: Unknown status"
+fi
+
+# Check certificate issuing task (certificates depend on Moodle cron)
+# NOTE: assumes the default table prefix "mdl_"; DB_NAME comes from moodle-config.env
+if [ -n "${DB_HOST:-}" ]; then
+    TASK_ROW=$(mariadb -N -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -e \
+        "SELECT lastruntime, faildelay, disabled FROM mdl_task_scheduled WHERE classname = '\\\\mod_coursecertificate\\\\task\\\\issue_certificates_task';" 2>/dev/null)
+    if [ -z "$TASK_ROW" ]; then
+        echo "? Certificate task: not found (mod_coursecertificate not installed?)"
+    else
+        read -r T_LAST T_FAIL T_DISABLED <<< "$TASK_ROW"
+        AGE=$(( $(date +%s) - T_LAST ))
+        if [ "$T_DISABLED" = "1" ] || [ "$T_FAIL" -gt 0 ] || [ "$AGE" -gt 900 ]; then
+            echo "⚠ Certificate task: disabled=$T_DISABLED faildelay=$T_FAIL last run ${AGE}s ago"
+        else
+            echo "✓ Certificate task: OK (last run ${AGE}s ago)"
+        fi
+    fi
 fi
 
 # Check SSL certificate expiry
@@ -372,7 +395,7 @@ echo "Monitoring Setup Complete!"
 echo "======================================================================${NC}"
 
 echo -e "\n📊 CloudWatch Monitoring:"
-echo "  Namespace: Moodle/EC2"
+echo "  Namespace: CWAgent (disk_used_percent for / and /moodledata, dims InstanceId+path)"
 echo "  Metrics: CPU, Memory, Disk, Network"
 echo "  Logs: Apache, PHP-FPM, Memory Monitor"
 
@@ -389,7 +412,7 @@ echo "  Apache logs: sudo tail -f /var/log/httpd/moodle-error.log"
 echo "  PHP-FPM logs: sudo tail -f /var/log/php-fpm/error.log"
 
 echo -e "\n📈 CloudWatch Console:"
-echo "  View metrics: AWS Console → CloudWatch → Metrics → Moodle/EC2"
+echo "  View metrics: AWS Console → CloudWatch → Metrics → CWAgent"
 echo "  View logs: AWS Console → CloudWatch → Log groups"
 
 echo -e "\n⚠️  Set Up Alarms:"

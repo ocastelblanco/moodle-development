@@ -1,9 +1,9 @@
-# Moodle 5.1 AWS Infrastructure - Main Configuration
+# Moodle 5.3 LTS AWS Infrastructure - Main Configuration
 # Version: 1.0.0
 # Date: 2026-02-02
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.4" # terraform_data (ses.tf)
 
   required_providers {
     aws = {
@@ -112,16 +112,16 @@ locals {
     "t4g.xlarge" = 16384
   }
 
-  memory_mb            = lookup(local.instance_memory, var.instance_type, 4096)
-  system_memory_mb     = 800
-  available_memory_mb  = local.memory_mb - local.system_memory_mb
-  memory_per_process   = 200
+  memory_mb               = lookup(local.instance_memory, var.instance_type, 4096)
+  system_memory_mb        = 800
+  available_memory_mb     = local.memory_mb - local.system_memory_mb
+  memory_per_process      = 200
   calculated_max_children = floor(local.available_memory_mb / local.memory_per_process)
-  php_fpm_max_children = var.php_fpm_max_children > 0 ? var.php_fpm_max_children : local.calculated_max_children
+  php_fpm_max_children    = var.php_fpm_max_children > 0 ? var.php_fpm_max_children : local.calculated_max_children
 
   # Auto-calculate SWAP size
   calculated_swap_gb = local.memory_mb < 2048 ? ceil(local.memory_mb / 512) : (local.memory_mb <= 8192 ? ceil(local.memory_mb / 1024) : 8)
-  swap_size_gb      = var.swap_size_gb > 0 ? var.swap_size_gb : local.calculated_swap_gb
+  swap_size_gb       = var.swap_size_gb > 0 ? var.swap_size_gb : local.calculated_swap_gb
 
   # Common tags
   common_tags = merge(
@@ -142,11 +142,11 @@ output "configuration_summary" {
   description = "Summary of calculated configuration"
   value = {
     instance_type        = var.instance_type
-    memory_mb           = local.memory_mb
+    memory_mb            = local.memory_mb
     php_fpm_max_children = local.php_fpm_max_children
-    swap_size_gb        = local.swap_size_gb
-    ami_id              = local.ami_id
-    vpc_id              = local.vpc_id
-    subnet_id           = local.subnet_id
+    swap_size_gb         = local.swap_size_gb
+    ami_id               = local.ami_id
+    vpc_id               = local.vpc_id
+    subnet_id            = local.subnet_id
   }
 }

@@ -1,4 +1,4 @@
-# Sistema de Backups para Moodle 5.1
+# Sistema de Backups para Moodle 5.3 LTS
 
 Guía completa de estrategias de backup, recuperación y disaster recovery.
 
@@ -59,17 +59,17 @@ Este script configura:
 # Cron: Diario a las 3 AM
 # Script: /usr/local/bin/moodle-backup-db.sh
 # Ubicación: /var/backups/moodle/database/
-# NOTA: Los backups de base de datos NO son afectados por cambios en Moodle 5.1
+# NOTA: Los backups de base de datos NO son afectados por cambios en Moodle 5.3 LTS
 ```
 
 ### Backup Manual
 
 ```bash
 # Backup simple
-mysqldump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME | gzip > moodle-$(date +%Y%m%d).sql.gz
+mariadb-dump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME | gzip > moodle-$(date +%Y%m%d).sql.gz
 
 # Backup optimizado (recomendado)
-mysqldump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" \
+mariadb-dump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" \
     --single-transaction \
     --quick \
     --lock-tables=false \
@@ -78,7 +78,7 @@ mysqldump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" \
     $DB_NAME | gzip > moodle-$(date +%Y%m%d).sql.gz
 
 # Con progress bar (opcional)
-mysqldump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" \
+mariadb-dump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" \
     --single-transaction \
     --quick \
     --lock-tables=false \
@@ -117,7 +117,7 @@ DAY=$(date +%w)
 
 if [ $DAY -eq $FULL_BACKUP_DAY ]; then
     # Full backup semanal
-    mysqldump [opciones] > "$BACKUP_DIR/full-$(date +%Y%m%d).sql.gz"
+    mariadb-dump [opciones] > "$BACKUP_DIR/full-$(date +%Y%m%d).sql.gz"
 else
     # Incremental (binary logs)
     mysqlbinlog --read-from-remote-server \
@@ -132,20 +132,26 @@ fi
 
 ## 📁 Backup de Moodledata
 
+### Contenido crítico: `filedir` y certificados
+
+El backup de `/moodledata` DEBE incluir `/moodledata/filedir`: allí se almacenan los PDFs de certificados emitidos (mod_coursecertificate / tool_certificate) y las imágenes de las plantillas. Solo se excluyen `cache`, `localcache`, `temp` y `sessions`. Los registros de certificados emitidos y sus códigos de verificación están en la base de datos, por lo que base de datos + `filedir` son inseparables: restaurar uno sin el otro deja certificados sin archivo.
+
+El cliente de BD en AL2023 es `mariadb1011-client-utils` (provee `mariadb` y `mariadb-dump`), compatible con RDS MariaDB 11.8.
+
 ### Método Automatizado
 
 ```bash
 # Ya configurado: Semanal domingos 4 AM
 # Script: /usr/local/bin/moodle-backup-data.sh
 # Ubicación: /var/backups/moodle/moodledata/
-# NOTA: El directorio /moodledata NO cambia de ubicación en Moodle 5.1
+# NOTA: Incluye /moodledata/filedir (PDFs e imágenes de certificados)
 ```
 
 ### Backup Manual
 
 ```bash
 # Backup completo (excluye cache/temp)
-# NOTA: Las exclusiones de cache/temp permanecen iguales en Moodle 5.1
+# NOTA: Las exclusiones de cache/temp permanecen iguales en Moodle 5.3 LTS
 sudo tar -czf moodledata-$(date +%Y%m%d).tar.gz \
     --exclude='/moodledata/cache/*' \
     --exclude='/moodledata/localcache/*' \
@@ -166,7 +172,7 @@ tar -tzf moodledata-$(date +%Y%m%d).tar.gz > /dev/null && echo "OK" || echo "ERR
 
 ### Backup del Código Moodle
 
-**NUEVO en Moodle 5.1:** El código ahora incluye el subdirectorio `/public` que debe ser incluido en los backups.
+**Desde Moodle 5.1:** el código incluye el subdirectorio `/public` que debe ser incluido en los backups.
 
 ```bash
 # Backup del código Moodle (incluye el nuevo directorio /public)
@@ -178,7 +184,7 @@ sudo tar -czf moodle-code-$(date +%Y%m%d).tar.gz \
 tar -tzf moodle-code-$(date +%Y%m%d).tar.gz | grep "public/" | head -5
 ```
 
-**Importante:** En Moodle 5.1, asegúrate de que los backups del código incluyan el nuevo directorio `/public` junto con todos los archivos en el nivel superior (config.php, admin/, lib/, theme/, etc.).
+**Importante:** En Moodle 5.3 LTS, asegúrate de que los backups del código incluyan el nuevo directorio `/public` junto con todos los archivos en el nivel superior (config.php, admin/, lib/, theme/, etc.).
 
 ### Backup Diferencial (Más Rápido)
 
@@ -374,13 +380,13 @@ gunzip < moodle-db-20260202.sql.gz | head -100
 
 # 3. Restaurar (CUIDADO: Sobrescribe datos actuales)
 # Hacer backup de DB actual primero!
-mysqldump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME > current-backup.sql
+mariadb-dump -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME > current-backup.sql
 
 # Restaurar desde backup
-gunzip < moodle-db-20260202.sql.gz | mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME
+gunzip < moodle-db-20260202.sql.gz | mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME
 
 # 4. Verificar
-mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -e "SELECT COUNT(*) FROM mdl_user;"
+mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" $DB_NAME -e "SELECT COUNT(*) FROM mdl_user;"
 
 # 5. Limpiar cache Moodle
 sudo -u apache php /var/www/html/moodle/admin/cli/purge_caches.php
@@ -551,7 +557,7 @@ aws cloudwatch put-metric-alarm \
 # (Nunca en producción)
 
 # 2. Verificar integridad de datos
-mysql -h test-db -u user -p testdb -e "
+mariadb -h test-db -u user -p testdb -e "
     SELECT
         COUNT(*) as users,
         MAX(timecreated) as latest_user
@@ -660,7 +666,7 @@ echo "$(date): Backup test successful" >> /var/log/backup-tests.log
 
 - [Moodle Backup Documentation](https://docs.moodle.org/en/Backup)
 - [AWS Backup](https://aws.amazon.com/backup/)
-- [mysqldump Manual](https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html)
+- [mariadb-dump](https://mariadb.com/kb/en/mariadb-dump/)
 - [AWS Data Lifecycle Manager](https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-lifecycle.html)
 
 ---

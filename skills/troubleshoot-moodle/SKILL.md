@@ -1,6 +1,7 @@
 ---
 name: troubleshoot-moodle
-description: Diagnoses and resolves common Moodle deployment and operational issues including performance problems, errors, and service failures. Use when issues are reported or site is not functioning properly. Triggers: "site is down", "503 error", "Moodle slow", "out of memory", "database error", "cron not running".
+description: >-
+  Diagnoses and resolves common Moodle deployment and operational issues including performance problems, errors, and service failures. Use when issues are reported or site is not functioning properly. Triggers: "site is down", "503 error", "Moodle slow", "out of memory", "database error", "cron not running", "certificates not issued", "certificate email not received".
 ---
 
 # Troubleshoot Moodle Issues
@@ -39,7 +40,7 @@ df -h / /moodledata | grep -v "Filesystem"
 
 # Database
 source /root/moodle-config.env
-if mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
+if mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" -e "SELECT 1;" &>/dev/null; then
     echo "  Database connected"
 else
     echo "  Database connection failed"
@@ -93,7 +94,7 @@ sudo systemctl status php-fpm
 source /root/moodle-config.env
 
 # Test connection
-mysql -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" -e "SELECT 1;"
+mariadb -h $DB_HOST -u $DB_USER -p"$DB_PASSWORD" -e "SELECT 1;"
 ```
 
 **Common causes:**
@@ -306,12 +307,12 @@ sudo semanage fcontext -a -t httpd_sys_rw_content_t "/moodledata(/.*)?"
 sudo restorecon -Rv /moodledata
 ```
 
-### Issue 8: Moodle 5.1 muestra pagina en blanco o error 404
+### Issue 8: Moodle 5.3 muestra pagina en blanco o error 404
 
 **Sintomas:**
 - Pagina en blanco al acceder al sitio
 - Error 404 en todas las URLs
-- Moodle no carga despues de upgrade a 5.1
+- Moodle no carga despues de upgrade a 5.3
 
 **Causa comun:** DocumentRoot no apunta a `/public`
 
@@ -347,6 +348,54 @@ ls -la /var/www/html/moodle/public/
 # Probar acceso
 curl -I http://localhost/
 ```
+
+### Issue 9: Certificados no se emiten / no llegan por correo
+
+**Sintomas:**
+- Estudiantes aprobados no reciben el certificado
+- La actividad Course certificate no lista certificados emitidos
+
+**Causas comunes:** cron detenido, tarea programada deshabilitada o fallando, usuario sin capacidad, restricciones de acceso no cumplidas, SES en sandbox o SMTP mal configurado.
+
+**Diagnostico y solucion (en orden):**
+```bash
+# 1. Cron funcionando (debe correr cada minuto)
+cat /etc/cron.d/moodle
+sudo tail -20 /var/log/cron
+
+# 2. Estado de la tarea programada (lastruntime, faildelay, disabled)
+# Site administration > Server > Tasks > Scheduled tasks > "Issue course certificates"
+
+# 3. Ejecutar la tarea manualmente como apache y leer la salida
+sudo -u apache php /var/www/html/moodle/admin/cli/scheduled_task.php --execute='\mod_coursecertificate\task\issue_certificates_task'
+```
+
+4. **Capacidad:** el usuario necesita `mod/coursecertificate:receive` en el contexto del curso (rol Student por defecto). Verificar en Permissions > Check permissions.
+5. **Restricciones de acceso:** la actividad debe tener "Automatic sending" activado y sus restricciones (finalizacion del curso + calificacion minima) cumplidas por el usuario.
+6. **Correo:** si la tarea emite pero no llega el correo, revisar SES (fuera del sandbox, identidad verificada, rebotes/quejas) y que Moodle use SMTP TLS puerto 587; probar en Site administration > Server > Email > Test outgoing mail configuration.
+7. **Plugins:** confirmar que `mod_coursecertificate` y `tool_certificate` estan instalados y son compatibles con 5.3 (Site administration > Plugins overview).
+
+### Issue 10: La instalacion de Moodle 5.3 falla con MariaDB < 11.4
+
+**Sintomas:**
+- El instalador o `admin/cli/install.php` rechaza la base de datos ("database version not supported")
+- Falla el chequeo de entorno con RDS MariaDB 10.11
+
+**Causa:** Moodle 5.3 requiere MariaDB 11.4.0 o superior; 10.11 ya no es compatible.
+
+**Solucion:**
+```bash
+# Ver version del servidor
+mariadb -h $DB_HOST -u $DB_USER -p -e "SELECT VERSION();"
+
+# Usar RDS for MariaDB 11.8 (parameter group family mariadb11.8).
+# En una instancia existente: snapshot manual, luego modificar engine version a 11.8
+# (RDS puede exigir pasos de actualizacion mayor intermedios) ANTES de actualizar el codigo de Moodle.
+```
+
+### Slow site or out of disk: scale
+
+If the site is slow because CPU, memory or credits are exhausted, or `/moodledata` is nearly full, first confirm with the PHP-FPM/DB checks above, then use the `scale-infrastructure` skill (`scripts/09-scale-infrastructure.sh report`) to measure and resize EC2/RDS/EBS.
 
 ### View all logs
 

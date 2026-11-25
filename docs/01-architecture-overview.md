@@ -69,7 +69,7 @@ Internet
 │  │  │  - Extensiones: gd, zip, soap, intl, etc.   │  │  │
 │  │  └──────────────────────────────────────────────┘  │  │
 │  │  ┌──────────────────────────────────────────────┐  │  │
-│  │  │  Moodle 5.1                                  │  │  │
+│  │  │  Moodle 5.3 LTS                              │  │  │
 │  │  │  /var/www/html/moodle                        │  │  │
 │  │  │  - DocumentRoot: /public                     │  │  │
 │  │  │  - Core de Moodle                            │  │  │
@@ -90,7 +90,7 @@ Internet
                │
                ▼
 ┌─────────────────────────────────────────────┐
-│      RDS MariaDB 10.11.15+                  │
+│      RDS MariaDB 11.8 (LTS)                 │
 │  ┌───────────────────────────────────────┐  │
 │  │  Security Group: moodle-rds-sg        │  │
 │  │    - 3306/tcp desde moodle-sg         │  │
@@ -102,6 +102,22 @@ Internet
 │  - Storage: 20-100 GB gp3                   │
 └─────────────────────────────────────────────┘
 ```
+
+## 🧭 Matriz de versiones y soporte
+
+| Componente | Versión | Soporte / ciclo de vida |
+|------------|---------|-------------------------|
+| **Moodle** | 5.3 LTS (`MOODLE_503_STABLE`) | Soporte general hasta ~oct 2027; seguridad hasta ~oct 2029 |
+| **PHP** | 8.4 (paquetes `php8.4-*` de AL2023) | Seguridad hasta 31-dic-2028 |
+| **MariaDB** | RDS for MariaDB 11.8 (LTS) | Mínimo exigido por Moodle 5.3: 11.4.0 |
+| **Sistema operativo** | Amazon Linux 2023 ARM64 (Graviton) | Fin de soporte 30-jun-2029 |
+
+### Decisiones de versiones (ADR)
+
+- **¿Por qué NO Ubuntu 26.04?** Distribuye PHP 8.5, que Moodle 5.3 no soporta (máximo PHP 8.4). Amazon Linux 2023 permite instalar PHP 8.4 con paquetes `php8.4-*` (no existen `php-xmlrpc` ni `php-json`; json va en el core).
+- **¿Por qué NO MariaDB 10.11?** Moodle 5.3 elevó el mínimo a MariaDB 11.4.0, por lo que 10.11 ya no es compatible. Se usa RDS for MariaDB 11.8 con `auto_minor_version_upgrade = true`.
+- **Cliente MariaDB en EC2:** `mariadb1011-client-utils` (reemplaza a `mariadb105`); es compatible para conectar y hacer dump contra un servidor 11.8.
+- **Rama git:** `MOODLE_503_STABLE`. Desde Moodle 5.0 las ramas siguen el patrón `MOODLE_5xx_STABLE`.
 
 ## 📋 Componentes Detallados
 
@@ -171,7 +187,7 @@ Ejemplo: 500 usuarios, 50 cursos
 ### 3. Database (RDS MariaDB)
 
 **Configuración:**
-- **Engine:** MariaDB 10.11.15 (LTS)
+- **Engine:** MariaDB 11.8 (LTS, `engine_version = "11.8"`, parameter group `mariadb11.8`)
 - **Instancia:** db.t4g.micro / db.t4g.small
 - **Storage:** 20 GB gp3 (auto-scaling hasta 100 GB)
 - **Multi-AZ:** No (single server, se puede habilitar)
@@ -241,7 +257,7 @@ Outbound:
 - **Compress:** Habilitado
 - **HTTP/2:** Habilitado
 
-**Nota sobre Moodle 5.1:** Los assets ahora se sirven a través del directorio `/public`. El Routing Engine de Moodle 5.1 maneja las solicitudes de forma transparente.
+**Nota sobre Moodle 5.3:** Los assets se sirven a través del directorio `/public` (estructura vigente desde 5.1). El Routing Engine maneja las solicitudes de forma transparente.
 
 **Costo:**
 - Primeros 1TB/mes: $0.085/GB
@@ -428,7 +444,7 @@ Esta arquitectura es **Single Server** optimizado. Para alta disponibilidad:
 - RDS connections > 80% max
 - Status check failed
 
-## 🆕 Moodle 5.1: Estructura de Directorios /public
+## 🆕 Moodle 5.x: Estructura de Directorios /public (desde 5.1)
 
 ### Cambio Crítico en DocumentRoot
 
@@ -437,7 +453,7 @@ Esta arquitectura es **Single Server** optimizado. Para alta disponibilidad:
 DocumentRoot /var/www/html/moodle
 ```
 
-**Nuevo (Moodle 5.1+):**
+**Nuevo (Moodle 5.1+, vigente en 5.3 LTS):**
 ```
 DocumentRoot /var/www/html/moodle/public
 ```
@@ -449,7 +465,7 @@ DocumentRoot /var/www/html/moodle/public
 3. **Mejores Prácticas:** Alineado con frameworks modernos (Laravel, Symfony, etc.)
 4. **Routing Engine:** Nuevo motor de procesamiento de solicitudes
 
-### Estructura de Directorios Moodle 5.1
+### Estructura de Directorios Moodle 5.3
 
 ```
 /var/www/html/moodle/
@@ -486,7 +502,7 @@ DocumentRoot /var/www/html/moodle/public
 | **Assets estáticos** | Ahora servidos desde `/public/theme/`, `/public/pluginfile.php`, etc. |
 | **Routing** | Nuevo Routing Engine procesa todas las solicitudes |
 
-### Configuración de Apache para Moodle 5.1
+### Configuración de Apache para Moodle 5.3
 
 ```apache
 <VirtualHost *:80>
@@ -508,7 +524,7 @@ DocumentRoot /var/www/html/moodle/public
 
 ### Migración de Plugins
 
-Después de actualizar a Moodle 5.1:
+Después de actualizar a Moodle 5.3:
 
 1. **Plugins estándar:** Migran automáticamente
 2. **Plugins personalizados:** Pueden requerir ajustes
@@ -524,28 +540,28 @@ El nuevo motor de enrutamiento:
 - Mejora el rendimiento de solicitudes
 - Maneja redirecciones de forma más eficiente
 
-### Requisitos Técnicos Moodle 5.1
+### Requisitos Técnicos Moodle 5.3 LTS
 
 | Componente | Mínimo | Recomendado |
 |------------|--------|-------------|
-| **PHP** | 8.2.0 | 8.3.x o 8.4.x |
+| **PHP** | 8.3.0 (solo 64-bit) | 8.4.x ✅ (8.5 NO soportado) |
 | **PostgreSQL** | 15.0 | 16+ |
 | **MySQL** | 8.4.0 | 8.4+ |
-| **MariaDB** | 10.11.0 | 10.11.15+ ✅ |
+| **MariaDB** | 11.4.0 | 11.8 (RDS) ✅ |
 | **max_input_vars** | 5000 | 5000+ ✅ |
 
 **Extensiones PHP adicionales:** `sodium` (requerida, ya incluida ✅)
 
 ### Camino de Actualización
 
-**Desde Moodle 4.x a 5.1:**
+**Desde Moodle 4.x a 5.3:**
 
-**Requisito:** Estar en Moodle 4.2.3 o superior
+**Requisito:** Estar en Moodle 4.4 o superior
 
 **Pasos:**
 1. Backup completo (código + base de datos)
 2. Activar modo mantenimiento
-3. Actualizar código de Moodle a 5.1
+3. Actualizar código de Moodle a 5.3 (rama `MOODLE_503_STABLE`)
 4. **Reconfigurar Apache:** DocumentRoot → `/var/www/html/moodle/public`
 5. Ejecutar `admin/cli/upgrade.php --non-interactive`
 6. Verificar plugins (relocación si es necesario)
@@ -563,5 +579,5 @@ El nuevo motor de enrutamiento:
 
 ---
 
-**Fecha:** 2026-02-11
-**Versión:** 1.1.0
+**Fecha:** 2026-11-25
+**Versión:** 2.0.0

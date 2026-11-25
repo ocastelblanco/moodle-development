@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 Server Setup Script
+# Moodle 5.3 LTS Server Setup Script
 # Version: 1.0.0
 # Date: 2026-02-02
 # Description: Installs and configures LAMP stack (Apache, PHP 8.4, MariaDB client)
@@ -21,7 +21,7 @@ exec > >(tee -a "$LOG_FILE")
 exec 2>&1
 
 echo "======================================================================"
-echo "Moodle 5.1 Server Setup"
+echo "Moodle 5.3 LTS Server Setup"
 echo "Started: $(date)"
 echo "======================================================================"
 
@@ -77,32 +77,45 @@ echo "✓ Apache installed: $APACHE_VERSION"
 
 echo -e "\n${BLUE}[4/8] Installing PHP 8.4 and extensions...${NC}"
 
-# Install PHP and required extensions for Moodle
+# Install PHP 8.4 and required extensions for Moodle (AL2023 versioned packages)
+# NOTE: php-xmlrpc and php-json do not exist in AL2023 (json is built into core)
 dnf install -y \
-    php \
-    php-fpm \
-    php-cli \
-    php-common \
-    php-mysqlnd \
-    php-gd \
-    php-xml \
-    php-mbstring \
-    php-intl \
-    php-zip \
-    php-soap \
-    php-json \
-    php-curl \
-    php-opcache \
-    php-xmlrpc \
-    php-sodium
+    php8.4 \
+    php8.4-fpm \
+    php8.4-cli \
+    php8.4-common \
+    php8.4-mysqlnd \
+    php8.4-pdo \
+    php8.4-gd \
+    php8.4-xml \
+    php8.4-mbstring \
+    php8.4-intl \
+    php8.4-zip \
+    php8.4-soap \
+    php8.4-opcache \
+    php8.4-sodium \
+    php8.4-process
 
 # Verify installation
 PHP_VERSION=$(php -v | head -1)
 echo "✓ PHP installed: $PHP_VERSION"
 
+# Moodle 5.3 requires PHP >= 8.3 and < 8.5
+if ! php -r 'exit(PHP_VERSION_ID >= 80300 && PHP_VERSION_ID < 80500 ? 0 : 1);'; then
+    echo -e "${RED}ERROR: Moodle 5.3 requires PHP >= 8.3 and < 8.5, found $(php -r 'echo PHP_VERSION;')${NC}"
+    exit 1
+fi
+
+# Moodle 5.3 requires max_input_vars >= 5000 (idempotent drop-in file)
+cat > /etc/php.d/99-moodle.ini << 'EOF'
+; Moodle 5.3 LTS requirements
+max_input_vars = 5000
+EOF
+echo "✓ max_input_vars=5000 configured in /etc/php.d/99-moodle.ini"
+
 # Enable and start PHP-FPM
 systemctl enable php-fpm
-systemctl start php-fpm
+systemctl restart php-fpm
 
 echo "✓ PHP-FPM started"
 
@@ -112,7 +125,7 @@ echo "✓ PHP-FPM started"
 
 echo -e "\n${BLUE}[5/8] Installing MariaDB client...${NC}"
 
-dnf install -y mariadb105
+dnf install -y mariadb1011-client-utils
 
 # Verify installation
 MYSQL_VERSION=$(mysql --version)

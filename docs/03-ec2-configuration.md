@@ -1,4 +1,4 @@
-# Configuración de EC2 para Moodle 5.1
+# Configuración de EC2 para Moodle 5.3 LTS
 
 Guía completa para provisionar y configurar la infraestructura EC2 en AWS.
 
@@ -122,7 +122,7 @@ cd skills/scripts/
 # - SELinux habilitado
 # - Soporte a largo plazo
 # - Actualizaciones de seguridad
-# - PHP 8.4, Apache 2.4, MariaDB 10.11
+# - PHP 8.4 (php8.4-* de AL2023), Apache 2.4, cliente MariaDB (mariadb1011-client-utils)
 ```
 
 **Búsqueda manual:**
@@ -146,7 +146,7 @@ El código Terraform incluye un script de User Data que:
 ✅ Crea archivo de configuración (/root/moodle-config.env)
 ```
 
-**Nota importante para Moodle 5.1:** El directorio `/moodledata` permanece sin cambios en su ubicación. Sin embargo, el DocumentRoot de Apache ahora apuntará a `/var/www/html/moodle/public` debido al nuevo Routing Engine de Moodle 5.1.
+**Nota importante para Moodle 5.3 (estructura `/public` desde 5.1):** El directorio `/moodledata` permanece sin cambios en su ubicación. Sin embargo, el DocumentRoot de Apache ahora apuntará a `/var/www/html/moodle/public` debido al nuevo Routing Engine de Moodle.
 
 Ver código completo en: [terraform/ec2.tf](../terraform/ec2.tf)
 
@@ -436,8 +436,8 @@ sudo /path/to/02-setup-server.sh
 
 El script instala:
 - Apache 2.4
-- PHP 8.4 + extensiones
-- MariaDB client
+- PHP 8.4 + extensiones (paquetes `php8.4-*`)
+- Cliente MariaDB (`mariadb1011-client-utils`)
 - Git, wget, certbot
 - Configuración básica
 

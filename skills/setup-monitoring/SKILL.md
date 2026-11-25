@@ -1,6 +1,7 @@
 ---
 name: setup-monitoring
-description: Configures comprehensive monitoring system using AWS CloudWatch for metrics, logs, and alarms to ensure Moodle availability and performance. Use when production deployment needs visibility, alerting, log aggregation, or dashboards. Triggers: "setup monitoring", "configure CloudWatch", "create alarms", "monitor Moodle server", "CloudWatch metrics", "log aggregation", "system health monitoring".
+description: >-
+  Configures comprehensive monitoring system using AWS CloudWatch for metrics, logs, and alarms to ensure Moodle availability and performance. Use when production deployment needs visibility, alerting, log aggregation, or dashboards. Triggers: "setup monitoring", "configure CloudWatch", "create alarms", "monitor Moodle server", "CloudWatch metrics", "log aggregation", "system health monitoring".
 ---
 
 # Setup Moodle Monitoring
@@ -71,6 +72,10 @@ The script fully automates monitoring configuration.
 | Service Down | 2 failures | Email alert |
 | SSL Expiring | <30 days | Email alert |
 | Cron Not Running | >10 minutes | Email alert |
+| Certificate Task Stale | `\mod_coursecertificate\task\issue_certificates_task` not run in >15 min, disabled, or faildelay > 0 | Email alert |
+| SES Bounce/Complaint | `Reputation.BounceRate` >5% or `Reputation.ComplaintRate` >0.1% (AWS/SES) | Email alert |
+
+Certificates depend on cron: the health check script queries `mdl_task_scheduled` for the certificate task. Bounces in SES stop certificate emails even when the task runs.
 
 ### CloudWatch costs
 

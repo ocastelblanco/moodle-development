@@ -1,6 +1,6 @@
 #!/bin/bash
 ################################################################################
-# Moodle 5.1 System Optimization Script
+# Moodle 5.3 LTS System Optimization Script
 # Version: 1.0.0
 # Date: 2026-02-02
 # Description: Optimizes PHP-FPM, Apache, and system settings for Moodle
