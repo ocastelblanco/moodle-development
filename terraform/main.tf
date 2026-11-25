@@ -3,7 +3,7 @@
 # Date: 2026-02-02
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.4" # terraform_data (ses.tf)
 
   required_providers {
     aws = {

@@ -28,6 +28,8 @@ How issuance works: the scheduled task `\mod_coursecertificate\task\issue_certif
 - Moodle cron running **every minute** (`/etc/cron.d/moodle`).
 - Amazon SES: domain verified, **out of sandbox** (`aws ses get-account` → `ProductionAccessEnabled: true`), SMTP credentials stored in SSM Parameter Store as `SecureString`.
 - EC2 instance role allowed to `ssm:GetParameter` (+ `kms:Decrypt`) on those two parameters only.
+- Terraform option: `enable_ses_smtp = true` (`terraform/ses.tf`) creates the SES identity (Easy DKIM), DNS records (Route 53 or `ses_dns_records_manual` output), least-privilege IAM SMTP user, SSM `SecureString` params and the EC2 read grant. Take `SMTP_*`/`NOREPLY_ADDRESS` from its `ses_*` outputs (password is never output). It stores the SMTP password in Terraform state: require the encrypted S3 backend. Sandbox exit stays manual.
+- Rotation: bump `ses_smtp_key_version` → `terraform apply` → immediately re-run `scripts/08-setup-certificates.sh` (mail fails in between) → *Test outgoing mail*.
 - Variables in `/root/moodle-config.env`:
 
 ```bash

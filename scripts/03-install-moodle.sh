@@ -271,28 +271,49 @@ fi
 ################################################################################
 
 # Variables (from /root/moodle-config.env or the environment):
-#   SMTP_HOST            e.g. email-smtp.us-east-1.amazonaws.com (empty = skip)
+#   SMTP_HOST            e.g. email-smtp.us-east-1.amazonaws.com (empty + SSM params set =
+#                        email-smtp.${AWS_REGION}.amazonaws.com)
 #   SMTP_USER_SSM_PARAM  SSM parameter name holding the SMTP username
 #   SMTP_PASS_SSM_PARAM  SSM parameter name holding the SMTP password (SecureString)
 #   NOREPLY_ADDRESS      sender address for Moodle emails
-if [ -n "${SMTP_HOST:-}" ] && [ -n "${SMTP_USER_SSM_PARAM:-}" ] && [ -n "${SMTP_PASS_SSM_PARAM:-}" ]; then
-    echo "Configuring SMTP via $SMTP_HOST..."
-    SMTP_USER=$(aws ssm get-parameter --name "$SMTP_USER_SSM_PARAM" --with-decryption --query Parameter.Value --output text)
-    SMTP_PASS=$(aws ssm get-parameter --name "$SMTP_PASS_SSM_PARAM" --with-decryption --query Parameter.Value --output text)
+# With terraform/ses.tf (enable_ses_smtp = true) these match its ses_* outputs.
+if [ -n "${SMTP_USER_SSM_PARAM:-}" ] && [ -n "${SMTP_PASS_SSM_PARAM:-}" ]; then
+    SMTP_HOST="${SMTP_HOST:-email-smtp.${AWS_REGION:-us-east-1}.amazonaws.com}"
+    echo "Configuring SMTP via ${SMTP_HOST%%:*}:587..."
+    SMTP_USER=$(aws ssm get-parameter --region "${AWS_REGION:-us-east-1}" --name "$SMTP_USER_SSM_PARAM" --with-decryption --query Parameter.Value --output text)
+    SMTP_PASS=$(aws ssm get-parameter --region "${AWS_REGION:-us-east-1}" --name "$SMTP_PASS_SSM_PARAM" --with-decryption --query Parameter.Value --output text)
 
     CFG_CLI="$MOODLE_DIR/admin/cli/cfg.php"
     sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtphosts --set="${SMTP_HOST%%:*}:587"
     sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtpsecure --set=tls
     sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtpauthtype --set=LOGIN
-    sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtpuser --set="$SMTP_USER"
-    sudo -u apache /usr/bin/php "$CFG_CLI" --name=smtppass --set="$SMTP_PASS"
     if [ -n "${NOREPLY_ADDRESS:-}" ]; then
         sudo -u apache /usr/bin/php "$CFG_CLI" --name=noreplyaddress --set="$NOREPLY_ADDRESS"
     fi
+
+    # Secrets go through STDIN, never argv (visible in ps) or logs
+    # (same technique as scripts/08-setup-certificates.sh)
+    SMTP_PHP=$(mktemp /tmp/moodle-smtp-XXXXXX.php)
+    chmod 644 "$SMTP_PHP"
+    cat > "$SMTP_PHP" <<PHP
+<?php
+define('CLI_SCRIPT', true);
+require('$MOODLE_DIR/config.php');
+\$lines = explode("\\n", stream_get_contents(STDIN), 2);
+set_config('smtpuser', trim(\$lines[0]));
+set_config('smtppass', trim(\$lines[1] ?? ''));
+PHP
+    SMTP_RC=0
+    printf '%s\n%s' "$SMTP_USER" "$SMTP_PASS" | sudo -u apache /usr/bin/php "$SMTP_PHP" || SMTP_RC=$?
+    rm -f "$SMTP_PHP"
     unset SMTP_USER SMTP_PASS
-    echo "✓ SMTP configured (TLS, port 587)"
+    if [ "$SMTP_RC" -ne 0 ]; then
+        echo -e "${RED}ERROR: Failed to store SMTP credentials in Moodle${NC}"
+        exit 1
+    fi
+    echo "✓ SMTP configured (TLS, port 587; credentials loaded from SSM, not displayed)"
 else
-    echo "SMTP_HOST / SMTP_USER_SSM_PARAM / SMTP_PASS_SSM_PARAM not set, skipping SMTP configuration"
+    echo "SMTP_USER_SSM_PARAM / SMTP_PASS_SSM_PARAM not set, skipping SMTP configuration"
 fi
 
 ################################################################################

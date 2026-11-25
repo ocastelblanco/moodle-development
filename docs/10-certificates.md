@@ -64,6 +64,7 @@ Puntos clave:
 - Extensión PHP `sodium` (`php8.4-sodium`).
 - Amazon SES: dominio verificado, cuenta **fuera del sandbox**, credenciales SMTP creadas.
 - Parámetros SSM, por ejemplo `/acg/ses/smtp-user` y `/acg/ses/smtp-password` (SecureString), y el rol IAM de la EC2 con permiso `ssm:GetParameter` sobre ellos.
+- Alternativa automatizada: `terraform/ses.tf` crea identidad, DNS, credenciales, parámetros SSM y permisos (ver 2.5).
 
 ### 2.2 Verificar compatibilidad de los plugins
 
@@ -89,6 +90,39 @@ sudo scripts/08-setup-certificates.sh
 ```
 
 El script es idempotente (puede ejecutarse varias veces). Instala o actualiza los plugins con git, ejecuta la actualización de Moodle, configura SMTP con SES, activa el seguimiento de finalización y las restricciones de acceso, habilita la verificación pública y comprueba la tarea programada. Registro: `/var/log/moodle-certificates-setup.log` (no contiene secretos).
+
+### 2.5 Credenciales SMTP con Terraform (`ses.tf`)
+
+`terraform/ses.tf` (opcional, `enable_ses_smtp = true`) reemplaza el proceso manual de `aws-email-system/AWS_EMAIL_SYSTEM.md`:
+
+- Identidad de dominio SES (`ses_domain`, por defecto `domain_name`) con Easy DKIM RSA 2048 y MAIL FROM personalizado opcional (`ses_mail_from_subdomain = "mail"` → `mail.<dominio>`).
+- Registros DNS en Route 53 si `route53_zone_id` está definido: 3 CNAME DKIM, DMARC (`ses_dmarc_policy`, por defecto `p=quarantine`, `rua` opcional con `ses_dmarc_rua_email`), MX + TXT del MAIL FROM y, solo si `ses_manage_spf = true`, el SPF raíz. **SPF está desactivado por defecto**: Route 53 guarda todos los TXT de un nombre en un solo registro; si ya existe un TXT raíz, agregue `include:amazonses.com` a mano. Sin zona, los registros salen en `terraform output ses_dns_records_manual`.
+- Usuario IAM `<proyecto>-<entorno>-ses-smtp` con permiso mínimo (`ses:SendRawEmail`/`ses:SendEmail` solo sobre la identidad y el configuration set, y solo con remitente `*@<dominio>`), su access key y la contraseña SMTP derivada.
+- Parámetros SSM `SecureString` (por defecto `/<proyecto>/<entorno>/ses/smtp-user` y `.../smtp-password`, clave `aws/ssm` o `kms_key_id`) y permiso `ssm:GetParameter` del rol de la EC2 solo sobre esos dos parámetros.
+- Configuration set `<proyecto>-<entorno>-ses` (asignado como predeterminado de la identidad, porque Moodle no envía la cabecera `X-SES-CONFIGURATION-SET`) con métricas de reputación y eventos BOUNCE/COMPLAINT/REJECT hacia el tópico SNS `<proyecto>-<entorno>-ses-events` (suscriptores: `scaling_alert_emails`), más alarmas de CloudWatch sobre la tasa de rebotes (> 5 %) y de quejas (> 0,1 %) de la cuenta.
+- Lista de supresión **a nivel de cuenta** (BOUNCE, COMPLAINT) con `ses_enable_account_suppression` (por defecto `true`; afecta a todos los remitentes SES de la cuenta y región).
+
+> **Secretos en el estado de Terraform:** la contraseña SMTP y la clave secreta IAM quedan en `terraform.tfstate`. Antes de activarlo en producción configure el backend S3 cifrado (bloque `backend "s3"` comentado en `terraform/main.tf`) y nunca suba el estado a git.
+
+Valores para `/root/moodle-config.env` (las salidas nunca incluyen la contraseña):
+
+```bash
+cd terraform
+echo "SMTP_HOST=\"$(terraform output -raw ses_smtp_host):587\""
+echo "SMTP_USER_SSM_PARAM=\"$(terraform output -raw ses_smtp_user_ssm_param)\""
+echo "SMTP_PASS_SSM_PARAM=\"$(terraform output -raw ses_smtp_pass_ssm_param)\""
+echo "NOREPLY_ADDRESS=\"$(terraform output -raw ses_noreply_address)\""
+terraform output ses_identity_status   # tras propagar DNS: terraform refresh
+```
+
+**Rotación de credenciales:**
+
+1. Incrementar `ses_smtp_key_version` en `terraform.tfvars` (p. ej. `"1"` → `"2"`).
+2. `terraform apply`: crea la nueva access key, actualiza ambos parámetros SSM y elimina la anterior. Desde ese momento Moodle no puede enviar correo hasta el paso 3.
+3. Inmediatamente, en la EC2: `sudo scripts/08-setup-certificates.sh` (o solo el bloque SMTP de `scripts/03-install-moodle.sh`) para recargar las credenciales desde SSM.
+4. Probar: *Administración del sitio > Servidor > Correo > Probar configuración de correo saliente*.
+
+**Sigue siendo manual:** solicitar el acceso de producción de SES (salir del sandbox, 24-48 h). Verifique con `aws sesv2 get-account` → `ProductionAccessEnabled: true`.
 
 ---
 

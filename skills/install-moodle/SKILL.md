@@ -227,7 +227,7 @@ El nuevo motor de enrutamiento (Routing Engine) de Moodle procesa todas las soli
 2. **Create Apache virtual host** (see `/configure-ssl` skill)
 3. **Configure SSL/HTTPS** (required before production)
 4. **Optimize system** (see `/optimize-system` skill)
-5. **Configure outbound email (Amazon SES SMTP)** - required for automatic certificate emails (see `/setup-certificates`): set `smtphosts` (SES SMTP endpoint:587), `smtpsecure=TLS`, `smtpuser`/`smtppass` read from SSM Parameter Store (never hardcode credentials)
+5. **Configure outbound email (Amazon SES SMTP)** - required for automatic certificate emails (see `/setup-certificates`): set `smtphosts` (SES SMTP endpoint:587), `smtpsecure=TLS`, `smtpuser`/`smtppass` read from SSM Parameter Store (never hardcode credentials). `scripts/03-install-moodle.sh` does this when `SMTP_USER_SSM_PARAM`/`SMTP_PASS_SSM_PARAM` are set (host defaults to `email-smtp.<AWS_REGION>.amazonaws.com`), passing credentials via STDIN, never argv. The params can be created by `terraform/ses.tf` (`enable_ses_smtp = true`; see its `ses_*` outputs)
 6. **Complete Moodle setup in browser:**
    - Access https://yourdomain.com
    - Login with admin credentials

@@ -322,6 +322,7 @@ aws cloudwatch put-metric-alarm \
 
 - [ ] Dominio registrado
 - [ ] (Para certificados automáticos) Dominio verificado en Amazon SES con credenciales SMTP generadas y fuera de sandbox
+  - Opcional: `enable_ses_smtp = true` en Terraform (`terraform/ses.tf`) crea identidad SES, DNS, credenciales SMTP en SSM y permisos; requiere backend S3 cifrado (la contraseña SMTP queda en el estado). La salida del sandbox sigue siendo manual. Ver [10-certificates.md §2.5](10-certificates.md).
 - [ ] Acceso a DNS management
 - [ ] (Opcional) Route 53 hosted zone creada
 

@@ -266,6 +266,12 @@ export -f validate_config 2>/dev/null || true
 #############################################
 
 # Credentials are NEVER stored here: only the SSM Parameter Store names.
+# With enable_ses_smtp = true in Terraform (terraform/ses.tf), use its outputs:
+#   SMTP_HOST           <- terraform output -raw ses_smtp_host
+#   SMTP_USER_SSM_PARAM <- terraform output -raw ses_smtp_user_ssm_param
+#   SMTP_PASS_SSM_PARAM <- terraform output -raw ses_smtp_pass_ssm_param
+#   NOREPLY_ADDRESS     <- terraform output -raw ses_noreply_address
+# (defaults: /<project_name>/<environment>/ses/smtp-user and .../smtp-password)
 export SMTP_HOST=""                  # e.g. email-smtp.us-east-1.amazonaws.com (empty = skip)
 export SMTP_USER_SSM_PARAM=""        # e.g. /moodle/smtp/user
 export SMTP_PASS_SSM_PARAM=""        # e.g. /moodle/smtp/password (SecureString)

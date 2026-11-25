@@ -131,6 +131,30 @@ scaling_alert_emails = []  # e.g. ["ops@example.com"]
 monthly_budget_usd   = 30
 
 #############################################
+# SES SMTP (Moodle outbound mail, ses.tf)
+#############################################
+
+# WARNING: with enable_ses_smtp = true the SMTP password and IAM secret key are
+# stored in Terraform state. Enable the encrypted S3 backend first (see the
+# commented backend "s3" block in main.tf) and never commit terraform.tfstate*.
+enable_ses_smtp = false
+
+ses_domain              = ""              # empty = domain_name
+ses_mail_from_subdomain = ""              # e.g. "mail" -> mail.<ses_domain> (custom MAIL FROM)
+ses_manage_spf          = false           # root TXT often exists already; merge include:amazonses.com manually
+ses_dmarc_policy        = "p=quarantine"  # empty = do not manage _dmarc
+ses_dmarc_rua_email     = ""              # e.g. "dmarc@example.com"
+ses_smtp_key_version    = "1"             # bump to rotate the SMTP credentials
+ses_smtp_user_param     = ""              # empty = /<project_name>/<environment>/ses/smtp-user
+ses_smtp_pass_param     = ""              # empty = /<project_name>/<environment>/ses/smtp-password
+kms_key_id              = ""              # empty = AWS-managed aws/ssm key
+ses_enable_account_suppression = true     # ACCOUNT-WIDE suppression list (BOUNCE, COMPLAINT)
+
+# DNS: Route 53 records are created when route53_zone_id (above) is set;
+# otherwise see `terraform output ses_dns_records_manual`.
+# SES sandbox exit (production access) is still a manual request in the console.
+
+#############################################
 # Moodle Configuration
 #############################################
 

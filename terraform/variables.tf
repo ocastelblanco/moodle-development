@@ -511,3 +511,88 @@ variable "monthly_budget_usd" {
     error_message = "monthly_budget_usd must be greater than 0."
   }
 }
+
+#############################################
+# SES SMTP (ses.tf)
+#############################################
+
+variable "enable_ses_smtp" {
+  description = "Create SES identity, SMTP IAM user/credentials (in SSM) and monitoring for Moodle mail. The SMTP password ends up in Terraform state: use the encrypted S3 backend."
+  type        = bool
+  default     = false
+}
+
+variable "ses_domain" {
+  description = "Domain verified in SES for sending (empty = domain_name)"
+  type        = string
+  default     = ""
+}
+
+variable "ses_mail_from_subdomain" {
+  description = "Custom MAIL FROM subdomain label (e.g. \"mail\" -> mail.<ses_domain>); empty = use amazonses.com"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = can(regex("^([a-z0-9]([a-z0-9-]*[a-z0-9])?)?$", var.ses_mail_from_subdomain))
+    error_message = "ses_mail_from_subdomain must be a single DNS label (e.g. \"mail\") or empty."
+  }
+}
+
+variable "ses_manage_spf" {
+  description = "Create the root SPF TXT record in Route 53. Default false: a root TXT record often already exists and Route 53 keeps one TXT record set per name; merge include:amazonses.com manually in that case"
+  type        = bool
+  default     = false
+}
+
+variable "ses_dmarc_policy" {
+  description = "DMARC policy tag for _dmarc.<ses_domain> (e.g. \"p=quarantine\"); empty = do not manage DMARC"
+  type        = string
+  default     = "p=quarantine"
+
+  validation {
+    condition     = can(regex("^(p=(none|quarantine|reject).*)?$", var.ses_dmarc_policy))
+    error_message = "ses_dmarc_policy must be empty or start with p=none|p=quarantine|p=reject."
+  }
+}
+
+variable "ses_dmarc_rua_email" {
+  description = "Mailbox for DMARC aggregate reports (rua); empty = no rua tag"
+  type        = string
+  default     = ""
+}
+
+variable "ses_smtp_key_version" {
+  description = "Bump (e.g. \"1\" -> \"2\") to rotate the SES SMTP access key and update the SSM parameters"
+  type        = string
+  default     = "1"
+}
+
+variable "ses_smtp_user_param" {
+  description = "SSM parameter name for the SMTP username (empty = /<project_name>/<environment>/ses/smtp-user)"
+  type        = string
+  default     = ""
+}
+
+variable "ses_smtp_pass_param" {
+  description = "SSM parameter name for the SMTP password (empty = /<project_name>/<environment>/ses/smtp-password)"
+  type        = string
+  default     = ""
+}
+
+variable "kms_key_id" {
+  description = "Customer-managed KMS key ARN for the SES SMTP SSM parameters (empty = AWS-managed aws/ssm key)"
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.kms_key_id == "" || can(regex("^arn:", var.kms_key_id))
+    error_message = "kms_key_id must be empty or a KMS key ARN (needed for the EC2 role kms:Decrypt grant)."
+  }
+}
+
+variable "ses_enable_account_suppression" {
+  description = "Enable the SES ACCOUNT-LEVEL suppression list for BOUNCE and COMPLAINT (affects every sender in this account/region)"
+  type        = bool
+  default     = true
+}
