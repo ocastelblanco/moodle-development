@@ -181,5 +181,3 @@ Distributed under the [Apache License 2.0](LICENSE).
 ## Support
 
 Maintainer: [@ocastelblanco](https://github.com/ocastelblanco). Open an [issue](https://github.com/ocastelblanco/moodle-development/issues) for questions or bugs.
-
-Based on the ACG Calidad project (Moodle 4.1 to 5.x upgrade).
